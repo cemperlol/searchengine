@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: root
+      changes:
+        - createTable:
+            tableName: index
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: page_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lemma_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rank
+                  type: float
+                  constraints:
+                    nullable: false

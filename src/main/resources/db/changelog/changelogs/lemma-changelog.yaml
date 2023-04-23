@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: root
+      changes:
+        - createTable:
+            tableName: lemma
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lemma
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: frequency
+                  type: int
+                  constraints:
+                    nullable: false
