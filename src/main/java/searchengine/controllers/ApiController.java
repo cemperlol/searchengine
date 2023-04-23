@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.services.IndexingServiceImpl;
 import searchengine.services.StatisticsService;
 
 @RestController
@@ -23,7 +24,10 @@ public class ApiController {
     }
 
     public String startIndexing() {
-        
+        IndexingServiceImpl indexator = new IndexingServiceImpl();
+
+        if (!indexator.isIndexing()) return "Индексация не запущена";
+
         return "";
     }
 }
