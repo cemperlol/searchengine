@@ -1,0 +1,150 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0
+      author: root
+      changes:
+        - createTable:
+            tableName: site
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: text
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: enum('INDEXING', 'INDEXED', 'FAILED')
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status_time
+                  type: datetime
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+
+  - changeSet:
+      id: 1
+      author: root
+      changes:
+        - createTable:
+            tableName: page
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: int
+                  constraints:
+                    nullable: false
+                    foreignKeyName: site_id_ref
+                    references: site(id)
+              - column:
+                  name: path
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: content
+                  type: mediumtext
+                  constraints:
+                    nullable: false
+
+
+  - changeSet:
+      id: 2
+      author: root
+      changes:
+        - createTable:
+            tableName: lemma
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lemma
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: frequency
+                  type: int
+                  constraints:
+                    nullable: false
+
+
+  - changeSet:
+      id: 3
+      author: root
+      changes:
+        - createTable:
+            tableName: index
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: page_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lemma_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rank
+                  type: float
+                  constraints:
+                    nullable: false
+
+
+  - changeSet:
+      id: 4
+      author: root
+      changes:
+        - createIndex:
+            columns:
+              - column:
+                  name: path(255)
+            indexName: path_index
+            tableName: page
