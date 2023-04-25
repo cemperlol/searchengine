@@ -1,8 +1,9 @@
 package searchengine.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import searchengine.repositories.SiteRepository;
+import org.springframework.stereotype.Service;
 
+@Service
 public class IndexingServiceImpl implements IndexingService {
 
     private boolean indexingStatus;
@@ -11,11 +12,25 @@ public class IndexingServiceImpl implements IndexingService {
 
     private PageService pageService;
 
-    @Autowired
-    public IndexingServiceImpl(SiteService siteService, PageService pageService) {
+    private IndexingServiceImpl() {
         this.indexingStatus = false;
+    }
+
+    @Autowired
+    private void setSiteService(SiteService siteService) {
         this.siteService = siteService;
+    }
+
+    private void setPageService(PageService pageService) {
         this.pageService = pageService;
+    }
+
+    private static final class InstanceHolder {
+        private static final IndexingServiceImpl INSTANCE = new IndexingServiceImpl();
+    }
+
+    public static IndexingServiceImpl getInstance() {
+        return InstanceHolder.INSTANCE;
     }
 
     @Override
@@ -34,6 +49,7 @@ public class IndexingServiceImpl implements IndexingService {
         clearDatabaseBeforeStart();
         indexingStatus = true;
 
+        
 
         return null;
     }
