@@ -1,26 +1,30 @@
 package searchengine.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import searchengine.config.SitesList;
+
+import java.util.concurrent.RecursiveAction;
 
 @Service
-public class IndexingServiceImpl implements IndexingService {
-
-    private boolean indexingStatus;
+@RequiredArgsConstructor
+public class IndexingServiceImpl
+        extends RecursiveAction
+        implements IndexingService {
 
     private SiteService siteService;
 
     private PageService pageService;
 
-    private IndexingServiceImpl() {
-        this.indexingStatus = false;
-    }
+    private final SitesList sites;
 
     @Autowired
     private void setSiteService(SiteService siteService) {
         this.siteService = siteService;
     }
 
+    @Autowired
     private void setPageService(PageService pageService) {
         this.pageService = pageService;
     }
@@ -40,17 +44,14 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     @Override
-    public boolean isIndexing() {
-        return indexingStatus;
+    public void startIndexing() {
+        clearDatabaseBeforeStart();
+
+        this.compute();
     }
 
     @Override
-    public String startIndexing() {
-        clearDatabaseBeforeStart();
-        indexingStatus = true;
+    protected void compute() {
 
-        
-
-        return null;
     }
 }
