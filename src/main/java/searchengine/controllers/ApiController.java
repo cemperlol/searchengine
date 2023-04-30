@@ -24,7 +24,7 @@ public class ApiController {
     }
 
     public String startIndexing() {
-        IndexingServiceImpl indexator = IndexingServiceImpl.getInstance();
+        IndexingServiceImpl indexator = new IndexingServiceImpl();
 
         indexator.startIndexing();
         if (!indexator.isIndexing()) return "Индексация не запущена";

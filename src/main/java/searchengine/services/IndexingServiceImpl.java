@@ -2,13 +2,16 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
+import searchengine.config.Site;
 import searchengine.config.SitesList;
 
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 
 @Service
-@RequiredArgsConstructor
 public class IndexingServiceImpl
         extends RecursiveAction
         implements IndexingService {
@@ -17,7 +20,7 @@ public class IndexingServiceImpl
 
     private PageService pageService;
 
-    private final SitesList sites;
+    private static List<Site> sitesList;
 
     @Autowired
     private void setSiteService(SiteService siteService) {
@@ -29,14 +32,11 @@ public class IndexingServiceImpl
         this.pageService = pageService;
     }
 
-    private static final class InstanceHolder {
-        private static final IndexingServiceImpl INSTANCE = new IndexingServiceImpl();
+    @Autowired
+    private void setSitesList(List<Site> sitesList) {
+        IndexingServiceImpl.sitesList = sitesList;
     }
-
-    public static IndexingServiceImpl getInstance() {
-        return InstanceHolder.INSTANCE;
-    }
-
+    
     @Override
     public void clearDatabaseBeforeStart() {
         siteService.deleteAllSites();
@@ -46,8 +46,9 @@ public class IndexingServiceImpl
     @Override
     public void startIndexing() {
         clearDatabaseBeforeStart();
-
-        this.compute();
+        try (ForkJoinPool pool = new ForkJoinPool()) {
+            pool.execute(this);
+        }
     }
 
     @Override
