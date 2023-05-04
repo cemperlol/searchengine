@@ -16,9 +16,10 @@ public class Site {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-//    @Column(nullable = false)
+    @Column(nullable = false)
     private int id;
 
+    @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "ENUM('INDEXING','INDEXED','FAILED')", nullable = false)
     private SiteStatus status;
 
@@ -36,12 +37,4 @@ public class Site {
 
     @OneToMany(mappedBy = "site")
     private Set<Page> pages = new HashSet<>();
-
-    /* @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(
-            name = "index",
-            joinColumns = {@JoinColumn(name = "site_id")},
-            inverseJoinColumns = {@JoinColumn(name = "lemma_id")}
-    )
-    List<Lemma> lemmas = new ArrayList<>(); */
 }

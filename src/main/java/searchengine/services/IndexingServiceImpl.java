@@ -48,15 +48,15 @@ public class IndexingServiceImpl
         clearDatabaseBeforeStart();
 
         List<IndexingServiceImpl> tasks = new ArrayList<>();
-        for (searchengine.config.Site site : sites) {
-            Site modelSite = new searchengine.model.Site();
-            modelSite.setName(site.getName());
-            modelSite.setStatus(SiteStatus.INDEXING);
-            modelSite.setStatusTime(new Timestamp(System.currentTimeMillis()));
-            modelSite.setUrl(site.getUrl());
-            siteService.saveSite(modelSite);
+        for (searchengine.config.Site configSite : sites) {
+            Site site = new Site();
+            site.setStatus(SiteStatus.INDEXING);
+            site.setStatusTime(new Timestamp(System.currentTimeMillis()));
+            site.setUrl(configSite.getUrl());
+            site.setName(configSite.getName());
+            siteService.saveSite(site);
 
-            String siteUrl = site.getUrl();
+            String siteUrl = configSite.getUrl();
             IndexingServiceImpl task =
                     new IndexingServiceImpl(siteUrl.substring(siteUrl.indexOf(".") + 1), site.getUrl());
             tasks.add(task);
