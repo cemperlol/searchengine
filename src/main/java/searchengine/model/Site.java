@@ -1,5 +1,9 @@
 package searchengine.model;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.HashSet;
@@ -7,11 +11,12 @@ import java.util.Set;
 
 @Entity
 @Table
+@Getter @Setter
 public class Site {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+//    @Column(nullable = false)
     private int id;
 
     @Column(columnDefinition = "ENUM('INDEXING','INDEXED','FAILED')", nullable = false)
