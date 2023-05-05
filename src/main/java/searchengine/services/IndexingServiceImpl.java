@@ -1,9 +1,11 @@
 package searchengine.services;
 
 import lombok.NoArgsConstructor;
+import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
+import searchengine.dto.statistics.PageResponse;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
@@ -23,7 +25,7 @@ public class IndexingServiceImpl
 
     private static PageService pageService;
 
-    private String siteUrl;
+    private Site site;
 
     private String pageUrl;
 
@@ -32,33 +34,27 @@ public class IndexingServiceImpl
         IndexingServiceImpl.pageService = pageService;
     }
 
-    private IndexingServiceImpl(String siteUrl, String pageUrl) {
-        this.siteUrl = siteUrl;
+    private IndexingServiceImpl(Site site, String pageUrl) {
+        this.site = site;
         this.pageUrl = pageUrl;
     }
 
     @Override
-    public void clearDatabaseBeforeStart() {
+    public void clearTablesBeforeStart() {
         siteService.deleteAllSites();
         pageService.deleteAllPages();
     }
 
     @Override
-    public void startIndexing(List<searchengine.config.Site> sites) {
-        clearDatabaseBeforeStart();
+    public void startIndexing(List<searchengine.config.Site> siteList) {
+        clearTablesBeforeStart();
 
-        List<IndexingServiceImpl> tasks = new ArrayList<>();
-        for (searchengine.config.Site configSite : sites) {
-            Site site = new Site();
-            site.setStatus(SiteStatus.INDEXING);
-            site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-            site.setUrl(configSite.getUrl());
-            site.setName(configSite.getName());
-            siteService.saveSite(site);
+        Set<IndexingServiceImpl> tasks = new HashSet<>();
+        for (searchengine.config.Site configSite : siteList) {
+            Site site = siteService.saveIndexingSite(configSite.getUrl(), configSite.getName());
 
-            String siteUrl = configSite.getUrl();
             IndexingServiceImpl task =
-                    new IndexingServiceImpl(siteUrl.substring(siteUrl.indexOf(".") + 1), site.getUrl());
+                    new IndexingServiceImpl(site, site.getUrl());
             tasks.add(task);
         }
 
@@ -68,8 +64,14 @@ public class IndexingServiceImpl
 
     @Override
     protected void compute() {
-        Document page = HtmlService.parsePage(pageUrl);
-        if (page == null) return;
+        PageResponse response = HtmlService.getResponse(pageUrl);
+        if (response.getResponse() == null) {
+            pageService.savePage();
+
+            return;
+        }
+        Document page = HtmlService.parsePage(response.getResponse());
+//        if (page == null) return;
 
         executeDelay();
         createSubtasks(page).forEach(RecursiveAction::fork);
@@ -77,11 +79,12 @@ public class IndexingServiceImpl
 
     protected Set<RecursiveAction> createSubtasks(Document doc) {
         Set<RecursiveAction> subtasks = Collections.synchronizedSet(new HashSet<>());
-        Pattern sitePattern = Pattern.compile(siteUrl);
+        Pattern sitePattern =
+                Pattern.compile(site.getUrl().substring(site.getUrl().indexOf(".") + 1));
 
         doc.select("a").eachAttr("abs:href").forEach(u -> {
             if (sitePattern.matcher(u).find() && !u.contains("#"))
-                subtasks.add(new IndexingServiceImpl(siteUrl, u));
+                subtasks.add(new IndexingServiceImpl(site, u));
         });
 
         return subtasks;

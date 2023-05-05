@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IndexingService {
 
-    void clearDatabaseBeforeStart();
+    void clearTablesBeforeStart();
 
     void startIndexing(List<Site> sites);
 }
