@@ -8,6 +8,7 @@ import searchengine.model.SiteStatus;
 import searchengine.repositories.SiteRepository;
 
 import java.sql.Timestamp;
+import java.util.Optional;
 
 @Service
 public class SiteService {
@@ -33,6 +34,11 @@ public class SiteService {
         saveSite(site);
 
         return site;
+    }
+
+    public Site updateSiteStatusTime(int id) {
+        siteRepository.updateSiteStatusTime(id);
+        return siteRepository.findById(id).orElse(null);
     }
 
     public void deleteAllSites() {

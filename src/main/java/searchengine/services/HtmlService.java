@@ -25,14 +25,17 @@ public interface HtmlService {
                     .execute();
 
             pageResponse.setStatusCode(response.statusCode());
+            pageResponse.setResponseBody(response.body());
         } catch (HttpStatusCodeException e) {
             pageResponse.setStatusCode(e.getStatusCode().value());
+            pageResponse.setResponseBody(e.getResponseBodyAsString());
             pageResponse.setCauseOfError(e.getStatusText());
 
             ApplicationLogger.log(e);
         } catch (IOException e) {
             pageResponse.setStatusCode(200);
-            pageResponse.setCauseOfError("Unhandled content type");
+            pageResponse.setResponseBody("Unhandled content type");
+            pageResponse.setCauseOfError(pageResponse.getCauseOfError());
 
             ApplicationLogger.log(e);
         }

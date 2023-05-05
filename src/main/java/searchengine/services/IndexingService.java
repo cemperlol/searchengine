@@ -9,4 +9,6 @@ public interface IndexingService {
     void clearTablesBeforeStart();
 
     void startIndexing(List<Site> sites);
+
+    String stopIndexing();
 }

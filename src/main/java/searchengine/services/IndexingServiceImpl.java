@@ -41,8 +41,8 @@ public class IndexingServiceImpl
 
     @Override
     public void clearTablesBeforeStart() {
-        siteService.deleteAllSites();
         pageService.deleteAllPages();
+        siteService.deleteAllSites();
     }
 
     @Override
@@ -63,24 +63,37 @@ public class IndexingServiceImpl
     }
 
     @Override
-    protected void compute() {
-        PageResponse response = HtmlService.getResponse(pageUrl);
-        if (response.getResponse() == null) {
-            pageService.savePage();
+    public String stopIndexing() {
+        //TODO: get tasks, shutdownNow those of them, which are running
+        return "";
+    }
 
-            return;
-        }
-        Document page = HtmlService.parsePage(response.getResponse());
+    @Override
+    protected void compute() {
+        if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null) return;
+
+        PageResponse pageResponse = HtmlService.getResponse(pageUrl);
+        if (!savePage(pageResponse)) return;
+
+        Document page = HtmlService.parsePage(pageResponse.getResponse());
 //        if (page == null) return;
 
+        site = siteService.updateSiteStatusTime(site.getId());
         executeDelay();
         createSubtasks(page).forEach(RecursiveAction::fork);
+    }
+
+    protected boolean savePage(PageResponse pageResponse) {
+        pageResponse.setPath(pageUrl);
+        pageService.savePage(pageResponse, site);
+
+        return pageResponse.getResponse() != null;
     }
 
     protected Set<RecursiveAction> createSubtasks(Document doc) {
         Set<RecursiveAction> subtasks = Collections.synchronizedSet(new HashSet<>());
         Pattern sitePattern =
-                Pattern.compile(site.getUrl().substring(site.getUrl().indexOf(".") + 1));
+                Pattern.compile("://".concat(site.getUrl().substring(site.getUrl().indexOf(".") + 1)));
 
         doc.select("a").eachAttr("abs:href").forEach(u -> {
             if (sitePattern.matcher(u).find() && !u.contains("#"))
