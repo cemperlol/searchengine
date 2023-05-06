@@ -7,10 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import searchengine.config.SitesList;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.services.IndexingServiceImpl;
-import searchengine.services.PageService;
-import searchengine.services.SiteService;
-import searchengine.services.StatisticsService;
+import searchengine.services.*;
 
 @RestController
 @RequestMapping("/api")
@@ -21,6 +18,8 @@ public class ApiController {
     private final SiteService siteService;
 
     private final PageService pageService;
+
+    private IndexingService indexator;
 
     public ApiController(StatisticsService statisticsService, SiteService siteService, PageService pageService) {
         this.statisticsService = statisticsService;
@@ -33,12 +32,17 @@ public class ApiController {
         return ResponseEntity.ok(statisticsService.getStatistics());
     }
 
-    @Autowired
-    public String startIndexing(SitesList sitesList) {
-        IndexingServiceImpl indexator = new IndexingServiceImpl(siteService, pageService);
+    @GetMapping("/startIndexing")
+    public String startIndexing() {
+        indexator = new IndexingServiceImpl(siteService, pageService);
+        indexator.startIndexing();
 
-        indexator.startIndexing(sitesList.getSites());
-        if (indexator.isCancelled()) return "Индексация не запущена";
+        return "";
+    }
+
+    @GetMapping("/stopIndexing")
+    public String stopIndexing() {
+        indexator.stopIndexing();
 
         return "";
     }

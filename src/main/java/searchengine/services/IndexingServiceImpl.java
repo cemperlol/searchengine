@@ -1,15 +1,15 @@
 package searchengine.services;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
+import searchengine.dto.statistics.IndexingResult;
 import searchengine.dto.statistics.PageResponse;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
@@ -18,13 +18,16 @@ import java.util.regex.Pattern;
 @ComponentScan
 @NoArgsConstructor
 public class IndexingServiceImpl
-        extends RecursiveAction
+        extends RecursiveTask<IndexingResult>
         implements IndexingService {
 
     private static SiteService siteService;
 
     private static PageService pageService;
 
+    private static ForkJoinPool pool;
+
+    @Getter
     private Site site;
 
     private String pageUrl;
@@ -46,7 +49,8 @@ public class IndexingServiceImpl
     }
 
     @Override
-    public void startIndexing(List<searchengine.config.Site> siteList) {
+    public List<IndexingResult> startIndexing() {
+        List<searchengine.config.Site> siteList = siteService.getSites();
         clearTablesBeforeStart();
 
         Set<IndexingServiceImpl> tasks = new HashSet<>();
@@ -58,29 +62,60 @@ public class IndexingServiceImpl
             tasks.add(task);
         }
 
-        ForkJoinPool pool = new ForkJoinPool();
-        tasks.forEach(pool::invoke);
+        pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        List<IndexingResult> results = new ArrayList<>();
+        tasks.forEach(t -> results.add(pool.invoke(t)));
+
+        results.forEach(r -> {
+            if (!r.isIndexingSucceed()) {
+                siteService.updateSiteStatus(r.getSiteId(), SiteStatus.FAILED);
+            } else {
+                siteService.updateSiteStatus(r.getSiteId(), SiteStatus.INDEXED);
+            }
+        });
+
+        return results;
     }
 
     @Override
     public String stopIndexing() {
-        //TODO: get tasks, shutdownNow those of them, which are running
-        return "";
+        pool.shutdownNow();
+        for (Site site : siteService.findAllSites()) {
+            if (site.getStatus() == SiteStatus.INDEXED) {
+                siteService.updateSiteStatus(site.getId(), SiteStatus.FAILED);
+            }
+        }
+
+        return "Indexation stopped because of the user request";
     }
 
     @Override
-    protected void compute() {
-        if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null) return;
+    protected IndexingResult compute() {
+        if (pool.isShutdown())
+            return new IndexingResult(site.getId(),false, "User stopped indexing");
+
+        if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
+            return new IndexingResult(site.getId(), true);
 
         PageResponse pageResponse = HtmlService.getResponse(pageUrl);
-        if (!savePage(pageResponse)) return;
+        if (!savePage(pageResponse))
+            return pageResponse.getStatusCode() == 200 ? new IndexingResult(site.getId(), true) :
+                    new IndexingResult(site.getId(), false, pageResponse.getCauseOfError());
 
         Document page = HtmlService.parsePage(pageResponse.getResponse());
-//        if (page == null) return;
-
         site = siteService.updateSiteStatusTime(site.getId());
+
         executeDelay();
-        createSubtasks(page).forEach(RecursiveAction::fork);
+        List<IndexingServiceImpl> subtasks = createSubtasks(page);
+        for (RecursiveTask<IndexingResult> subtask : subtasks) {
+            subtask.invoke();
+        }
+
+        List<IndexingResult> results = new ArrayList<>();
+        subtasks.forEach(s -> results.add(s.getRawResult()));
+
+        return results.stream().filter(r -> !r.isIndexingSucceed()).findFirst()
+                .orElse(new IndexingResult(site.getId(), true));
     }
 
     protected boolean savePage(PageResponse pageResponse) {
@@ -90,8 +125,8 @@ public class IndexingServiceImpl
         return pageResponse.getResponse() != null;
     }
 
-    protected Set<RecursiveAction> createSubtasks(Document doc) {
-        Set<RecursiveAction> subtasks = Collections.synchronizedSet(new HashSet<>());
+    protected List<IndexingServiceImpl> createSubtasks(Document doc) {
+        List<IndexingServiceImpl> subtasks = Collections.synchronizedList(new ArrayList<>());
         Pattern sitePattern =
                 Pattern.compile("://".concat(site.getUrl().substring(site.getUrl().indexOf(".") + 1)));
 

@@ -6,6 +6,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Site;
+import searchengine.model.SiteStatus;
 
 public interface SiteRepository extends CrudRepository<Site, Integer> {
 
@@ -13,4 +14,9 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Transactional
     @Query("update Site s set s.statusTime = current_timestamp where s.id = :id")
     void updateSiteStatusTime(@Param("id") int id);
+
+    @Modifying
+    @Transactional
+    @Query("update Site s set s.status = :status where s.id = :id")
+    void updateSiteStatus(@Param("status") SiteStatus status, @Param("id") int id);
 }
