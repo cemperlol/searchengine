@@ -27,13 +27,12 @@ public class SiteService {
         return siteRepository.save(site);
     }
 
-    public Site saveIndexingSite(String url, String name) {
+    public Site saveIndexingSite(searchengine.config.Site configSite) {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(url);
-        site.setName(name);
-
+        site.setUrl(HtmlService.makeUrlWithoutSlashEnd(configSite.getUrl()));
+        site.setName(configSite.getName());
         saveSite(site);
 
         return site;
@@ -45,6 +44,12 @@ public class SiteService {
     }
 
     public Site updateSiteStatus(int id, SiteStatus status) {
+        siteRepository.updateSiteStatus(status, id);
+        siteRepository.updateSiteStatusTime(id);
+        return siteRepository.findById(id).orElse(null);
+    }
+
+    public Site updateSiteLastError(int id, SiteStatus status, String lastError) {
         siteRepository.updateSiteStatus(status, id);
         siteRepository.updateSiteStatusTime(id);
         return siteRepository.findById(id).orElse(null);

@@ -142,7 +142,7 @@ databaseChangeLog:
       id: 4
       author: root
       changes:
-        - createUniqueIndex:
+        - createIndex:
             columns:
               - column:
                   name: path(255)

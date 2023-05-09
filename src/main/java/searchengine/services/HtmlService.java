@@ -10,9 +10,9 @@ import searchengine.dto.statistics.PageResponse;
 import java.io.IOException;
 
 @Service
-public interface HtmlService {
+public abstract class HtmlService {
 
-    static PageResponse getResponse(String url) {
+    public static PageResponse getResponse(String url) {
         PageResponse pageResponse = new PageResponse();
         Connection.Response response = null;
 
@@ -22,30 +22,42 @@ public interface HtmlService {
                     .userAgent("Mozilla/5.0 (Windows; U; WindowsNT 5.1; en-US; rv1.8.1.6) " +
                             "Gecko/20070725 Firefox/2.0.0.6")
                     .referrer("https://www.google.com")
+                    .ignoreContentType(true)
+                    .ignoreHttpErrors(true)
                     .execute();
 
-            pageResponse.setStatusCode(response.statusCode());
-            pageResponse.setResponseBody(response.body());
+            pageResponse = configurePageResponse(response);
         } catch (HttpStatusCodeException e) {
-            pageResponse.setStatusCode(e.getStatusCode().value());
-            pageResponse.setResponseBody(e.getResponseBodyAsString());
-            pageResponse.setCauseOfError(e.getStatusText());
+            pageResponse = configurePageResponse(e);
 
             ApplicationLogger.log(e);
         } catch (IOException e) {
-            pageResponse.setStatusCode(200);
-            pageResponse.setResponseBody("Unhandled content type");
-            pageResponse.setCauseOfError(pageResponse.getCauseOfError());
-
             ApplicationLogger.log(e);
         }
 
+        return pageResponse;
+    }
+
+    private static PageResponse configurePageResponse(Connection.Response response) {
+        PageResponse pageResponse = new PageResponse();
+        pageResponse.setStatusCode(response.statusCode());
+        pageResponse.setResponseBody(response.body());
         pageResponse.setResponse(response);
 
         return pageResponse;
     }
 
-    static Document parsePage(Connection.Response response) {
+    private static PageResponse configurePageResponse(HttpStatusCodeException e) {
+        PageResponse pageResponse = new PageResponse();
+        pageResponse.setStatusCode(e.getStatusCode().value());
+        pageResponse.setResponseBody(e.getResponseBodyAsString());
+        pageResponse.setCauseOfError(e.getStatusText());
+        pageResponse.setResponse(null);
+
+        return pageResponse;
+    }
+
+    public static Document parsePage(Connection.Response response) {
         Document doc = null;
 
         try {
@@ -55,5 +67,10 @@ public interface HtmlService {
         }
 
         return doc;
+    }
+
+    public static String makeUrlWithoutSlashEnd(String url) {
+        int urlLastSymbolIndex = url.length() - 1;
+        return url.charAt(urlLastSymbolIndex) == '/' ? url.substring(0, urlLastSymbolIndex) : url;
     }
 }

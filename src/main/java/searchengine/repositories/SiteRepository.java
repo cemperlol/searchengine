@@ -19,4 +19,9 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Transactional
     @Query("update Site s set s.status = :status where s.id = :id")
     void updateSiteStatus(@Param("status") SiteStatus status, @Param("id") int id);
+
+    @Modifying
+    @Transactional
+    @Query("update Site s set s.lastError = :lastError where s.id = :id")
+    void updateSiteLastError(@Param("lastError") String lastError, @Param("id") int id);
 }

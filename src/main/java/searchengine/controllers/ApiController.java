@@ -42,6 +42,8 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public String stopIndexing() {
+        if (indexator == null) return "Indexation stop failed, because no indexator was found";
+
         indexator.stopIndexing();
 
         return "";
