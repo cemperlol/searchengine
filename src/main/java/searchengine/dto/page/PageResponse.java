@@ -1,4 +1,4 @@
-package searchengine.dto.statistics;
+package searchengine.dto.page;
 
 import lombok.Data;
 import org.jsoup.Connection;

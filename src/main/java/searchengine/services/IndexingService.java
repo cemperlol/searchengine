@@ -1,15 +1,12 @@
 package searchengine.services;
 
-import searchengine.config.Site;
-import searchengine.dto.statistics.IndexingResult;
-
-import java.util.List;
+import searchengine.dto.indexing.IndexingToggleResponse;
 
 public interface IndexingService {
 
     void clearTablesBeforeStart();
 
-    List<IndexingResult> startIndexing();
+    IndexingToggleResponse startIndexing();
 
-    String stopIndexing();
+    IndexingToggleResponse stopIndexing();
 }

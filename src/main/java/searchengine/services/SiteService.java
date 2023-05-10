@@ -55,6 +55,9 @@ public class SiteService {
         return siteRepository.findById(id).orElse(null);
     }
 
+    public Site findSiteById(int id) {
+        return siteRepository.findById(id).orElse(null);
+    }
     public List<Site> findAllSites() {
         return (List<Site>) siteRepository.findAll();
     }

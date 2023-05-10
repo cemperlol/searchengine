@@ -5,7 +5,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
-import searchengine.dto.statistics.PageResponse;
+import searchengine.dto.page.PageResponse;
 
 import java.io.IOException;
 
