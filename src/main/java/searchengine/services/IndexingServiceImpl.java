@@ -53,7 +53,7 @@ public class IndexingServiceImpl
         Set<IndexingServiceImpl> tasks = new HashSet<>();
         for (searchengine.config.Site configSite : siteService.getSites()) {
             Site site = siteService.saveIndexingSite(configSite);
-            IndexingServiceImpl task = new IndexingServiceImpl(site, site.getUrl());
+            IndexingServiceImpl task = new IndexingServiceImpl(site, site.getUrl().concat("/"));
             tasks.add(task);
         }
 
@@ -85,10 +85,11 @@ public class IndexingServiceImpl
             return new IndexingToggleResponse(false, "User stopped indexing");
         }
 
+        pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
             return new IndexingToggleResponse(true);
 
-        PageResponse pageResponse = HtmlService.getResponse(pageUrl);
+        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
         savePage(pageResponse);
         site = siteService.updateSiteStatusTime(site.getId());
         Document page = HtmlService.parsePage(pageResponse.getResponse());
@@ -96,12 +97,13 @@ public class IndexingServiceImpl
 
         if (!pool.isShutdown()) executeDelay();
         List<IndexingServiceImpl> subtasks = createSubtasks(page);
-        subtasks.forEach(IndexingServiceImpl::invoke);
+        List<IndexingToggleResponse> results = new ArrayList<>();
+        subtasks.forEach(s -> results.add(s.invoke()));
 
-        /* TODO: add checker whether all IndexingResults've failed, if at least one have not, then indexing was
-            successful */
-
-        return new IndexingToggleResponse(true);
+        if (results.stream().filter(IndexingToggleResponse::isResult).findFirst().orElse(null) != null) {
+            return new IndexingToggleResponse(true);
+        }
+        return new IndexingToggleResponse(false);
     }
 
     protected void savePage(PageResponse pageResponse) {
@@ -111,11 +113,10 @@ public class IndexingServiceImpl
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {
         List<IndexingServiceImpl> subtasks = Collections.synchronizedList(new ArrayList<>());
-        Pattern sitePattern = Pattern.compile(site.getUrl().substring(site.getUrl().indexOf(".") + 1));
-        Pattern httpsPattern = Pattern.compile("https?://");
+        Pattern sitePattern = Pattern.compile(site.getUrl());
 
         doc.select("a").eachAttr("abs:href").forEach(u -> {
-            if (httpsPattern.matcher(u).find() && sitePattern.matcher(u).find() && !u.contains("#"))
+            if (sitePattern.matcher(u).find() && !u.contains("#"))
                 subtasks.add(new IndexingServiceImpl(site, HtmlService.makeUrlWithoutSlashEnd(u).concat("/")));
         });
 

@@ -31,7 +31,8 @@ public class SiteService {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HtmlService.makeUrlWithoutSlashEnd(configSite.getUrl()));
+        site.setUrl(HtmlService
+                .makeUrlWithoutSlashEnd(configSite.getUrl().replace("://www.", "://")));
         site.setName(configSite.getName());
         saveSite(site);
 

@@ -74,5 +74,8 @@ public abstract class HtmlService {
         return url.charAt(urlLastSymbolIndex) == '/' ? url.substring(0, urlLastSymbolIndex) : url;
     }
 
-    // TODO: add page url format 
+    public static String getUrlWithoutDomainName(String siteUrl, String pageUrl) {
+        String domainName = siteUrl.substring(siteUrl.indexOf(".") + 1);
+        return pageUrl.substring(pageUrl.indexOf(domainName) + domainName.length());
+    }
 }
