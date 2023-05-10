@@ -49,8 +49,8 @@ public class SiteService {
         return siteRepository.findById(id).orElse(null);
     }
 
-    public Site updateSiteLastError(int id, SiteStatus status, String lastError) {
-        siteRepository.updateSiteStatus(status, id);
+    public Site updateSiteLastError(int id, String lastError) {
+        siteRepository.updateSiteLastError(lastError, id);
         siteRepository.updateSiteStatusTime(id);
         return siteRepository.findById(id).orElse(null);
     }

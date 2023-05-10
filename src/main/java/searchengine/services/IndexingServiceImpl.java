@@ -63,7 +63,8 @@ public class IndexingServiceImpl
 
         results.forEach(r -> {
             if (!r.isIndexingSucceed()) {
-                siteService.updateSiteLastError(r.getSiteId(), SiteStatus.FAILED, r.getErrorMessage());
+                siteService.updateSiteLastError(r.getSiteId(), r.getErrorMessage());
+                siteService.updateSiteStatus(r.getSiteId(), SiteStatus.FAILED);
             } else {
                 siteService.updateSiteStatus(r.getSiteId(), SiteStatus.INDEXED);
             }
@@ -74,17 +75,18 @@ public class IndexingServiceImpl
 
     @Override
     public String stopIndexing() {
-        if (pool == null) return "Indexation stop failed because no indexation is running";
+        if (pool == null) return "Indexing stop failed because no indexing is running";
 
         pool.shutdownNow();
 
         for (Site site : siteService.findAllSites()) {
             if (site.getStatus() == SiteStatus.INDEXED) {
+                siteService.updateSiteLastError(site.getId(), "User stopped indexing");
                 siteService.updateSiteStatus(site.getId(), SiteStatus.FAILED);
             }
         }
 
-        return "Indexation stopped because of the user request";
+        return "Indexing stopped by user request";
     }
 
     @Override
@@ -132,6 +134,8 @@ public class IndexingServiceImpl
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
+            // TODO: add better exception handler if possible
+
             Thread.currentThread().interrupt();
             ApplicationLogger.log(e);
         }

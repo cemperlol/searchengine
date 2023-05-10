@@ -73,4 +73,6 @@ public abstract class HtmlService {
         int urlLastSymbolIndex = url.length() - 1;
         return url.charAt(urlLastSymbolIndex) == '/' ? url.substring(0, urlLastSymbolIndex) : url;
     }
+
+    // TODO: add page url format 
 }
