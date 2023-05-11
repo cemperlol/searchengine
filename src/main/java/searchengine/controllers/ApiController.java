@@ -37,7 +37,9 @@ public class ApiController {
             return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
 
         indexator = new IndexingServiceImpl(siteService, pageService);
-        return ResponseEntity.ok(indexator.startIndexing());
+        IndexingToggleResponse response = indexator.startIndexing();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/stopIndexing")
@@ -45,10 +47,6 @@ public class ApiController {
         if (indexator == null)
             return ResponseEntity.ok(new IndexingToggleResponse(false, "No indexing is running"));
 
-
-        IndexingToggleResponse response = indexator.stopIndexing();
-        indexator = null;
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(indexator.stopIndexing());
     }
 }

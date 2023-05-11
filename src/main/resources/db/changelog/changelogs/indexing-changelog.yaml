@@ -57,7 +57,7 @@ databaseChangeLog:
                   type: int
                   constraints:
                     nullable: false
-                    foreignKeyName: site_id_ref
+                    foreignKeyName: site_id_ref_page
                     references: site(id)
               - column:
                   name: path
@@ -95,6 +95,8 @@ databaseChangeLog:
                   type: int
                   constraints:
                     nullable: false
+                    foreignKeyName: site_id_ref_lemma
+                    references: site(id)
               - column:
                   name: lemma
                   type: varchar(255)
@@ -126,11 +128,15 @@ databaseChangeLog:
                   type: int
                   constraints:
                     nullable: false
+                    foreignKeyName: page_id_ref_index
+                    references: page(id)
               - column:
                   name: lemma_id
-                  type: varchar(255)
+                  type: int
                   constraints:
                     nullable: false
+                    foreignKeyName: lemma_id_ref_index
+                    references: lemma(id)
               - column:
                   name: rank
                   type: float

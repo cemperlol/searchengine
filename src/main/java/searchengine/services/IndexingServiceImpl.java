@@ -11,6 +11,7 @@ import searchengine.model.SiteStatus;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @Service
@@ -29,6 +30,9 @@ public class IndexingServiceImpl
     private Site site;
 
     private String pageUrl;
+
+    private final AtomicReference<IndexingToggleResponse> lastResponse =
+            new AtomicReference<>(new IndexingToggleResponse(false, "Indexation have not started yet"));
 
     public IndexingServiceImpl(SiteService siteService, PageService pageService) {
         IndexingServiceImpl.siteService = siteService;
@@ -60,12 +64,13 @@ public class IndexingServiceImpl
         pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
         tasks.forEach(t -> pool.submit(t));
 
-        return new IndexingToggleResponse(true);
+        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
     }
 
     @Override
     public IndexingToggleResponse stopIndexing() {
-        if (pool == null) return new IndexingToggleResponse(false, "No indexing is running");
+        if (pool == null) return lastResponse.updateAndGet(r ->
+                r = new IndexingToggleResponse(false, "No indexing is running"));
 
         pool.shutdownNow();
         for (Site site : siteService.findAllSites()) {
@@ -75,35 +80,38 @@ public class IndexingServiceImpl
             }
         }
 
-        return new IndexingToggleResponse(true);
+        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
     }
 
     @Override
     protected IndexingToggleResponse compute() {
         if (pool.isShutdown()) {
             Thread.currentThread().interrupt();
-            return new IndexingToggleResponse(false, "User stopped indexing");
+            return lastResponse.updateAndGet(r ->
+                    r = new IndexingToggleResponse(false, "User stopped indexing"));
         }
 
         pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
-            return new IndexingToggleResponse(true);
+            return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
 
         PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
         savePage(pageResponse);
+
+        if (pageResponse.getResponse().statusCode() != 200)
+            siteService.updateSiteLastError(site.getId(), pageResponse.getCauseOfError());
+
         site = siteService.updateSiteStatusTime(site.getId());
         Document page = HtmlService.parsePage(pageResponse.getResponse());
-
-
         if (!pool.isShutdown()) executeDelay();
         List<IndexingServiceImpl> subtasks = createSubtasks(page);
         List<IndexingToggleResponse> results = new ArrayList<>();
         subtasks.forEach(s -> results.add(s.invoke()));
 
         if (results.stream().filter(IndexingToggleResponse::isResult).findFirst().orElse(null) != null) {
-            return new IndexingToggleResponse(true);
+            return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
         }
-        return new IndexingToggleResponse(false);
+        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(false, "Indexing failed"));
     }
 
     protected void savePage(PageResponse pageResponse) {
