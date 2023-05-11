@@ -47,6 +47,8 @@ public class ApiController {
         if (indexator == null)
             return ResponseEntity.ok(new IndexingToggleResponse(false, "No indexing is running"));
 
-        return ResponseEntity.ok(indexator.stopIndexing());
+        IndexingToggleResponse response = indexator.stopIndexing();
+        indexator = null;
+        return ResponseEntity.ok(response);
     }
 }

@@ -73,6 +73,11 @@ public class IndexingServiceImpl
                 r = new IndexingToggleResponse(false, "No indexing is running"));
 
         pool.shutdownNow();
+        try {
+            pool.awaitTermination(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            ApplicationLogger.log(e);
+        }
         for (Site site : siteService.findAllSites()) {
             if (site.getStatus() != SiteStatus.INDEXED) {
                 siteService.updateSiteLastError(site.getId(), "User stopped indexing");
@@ -85,12 +90,6 @@ public class IndexingServiceImpl
 
     @Override
     protected IndexingToggleResponse compute() {
-        if (pool.isShutdown()) {
-            Thread.currentThread().interrupt();
-            return lastResponse.updateAndGet(r ->
-                    r = new IndexingToggleResponse(false, "User stopped indexing"));
-        }
-
         pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
             return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
@@ -132,10 +131,11 @@ public class IndexingServiceImpl
     }
 
     protected void executeDelay() {
+        if (Thread.interrupted()) return;
+
         try {
-            if (!pool.isShutdown()) Thread.sleep(500);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
             ApplicationLogger.log(e);
         }
     }
