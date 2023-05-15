@@ -18,8 +18,12 @@ public class Lemmatizator {
         LuceneMorphology luceneMorph = getRussianMorphology();
         if (luceneMorph == null) return;
         text = text.toLowerCase(Locale.ROOT);
-        Matcher matcher = Pattern.compile("а-яё+");
-        luceneMorph.getNormalForms();
+        Matcher matcher = Pattern.compile("([а-яё]+[.]?[а-яё]+)+").matcher(text);
+
+        while(matcher.find()) {
+            String word = text.substring(matcher.start(), matcher.end());
+            
+        }
     }
 
     public static void saveLemmas(List<String> lemmas) {
