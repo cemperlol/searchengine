@@ -53,16 +53,13 @@ public class IndexingServiceImpl
     @Override
     public IndexingToggleResponse startIndexing() {
         clearTablesBeforeStart();
+        pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
-        Set<IndexingServiceImpl> tasks = new HashSet<>();
         for (searchengine.config.Site configSite : siteService.getSites()) {
             Site site = siteService.saveIndexingSite(configSite);
             IndexingServiceImpl task = new IndexingServiceImpl(site, site.getUrl().concat("/"));
-            tasks.add(task);
+            pool.submit(task);
         }
-
-        pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-        tasks.forEach(t -> pool.submit(t));
 
         return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
     }
