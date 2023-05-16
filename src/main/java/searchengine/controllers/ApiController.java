@@ -59,7 +59,7 @@ public class ApiController {
             return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
 
         indexator = new IndexingServiceImpl(siteService, pageService);
-        IndexingToggleResponse response = indexator.
+        IndexingToggleResponse response = indexator.indexPage(url);
 
         return ResponseEntity.ok(response);
     }

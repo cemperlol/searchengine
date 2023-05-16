@@ -56,6 +56,10 @@ public class SiteService {
         return siteRepository.findById(id).orElse(null);
     }
 
+    public Site findSiteByUrl(String url) {
+        return siteRepository.findSiteByUrl(url).orElse(null);
+    }
+
     public Site findSiteById(int id) {
         return siteRepository.findById(id).orElse(null);
     }

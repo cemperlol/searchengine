@@ -87,8 +87,16 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse indexPage(String url) {
-        if (siteService.findSiteByUrl(HtmlService.getBaseUrl(url)) == null)
-            return new IndexingToggleResponse(false, "This website was not added into the site list");
+        url = HtmlService.makeUrlWithoutSlashEnd(url).concat("/");
+        Site site = siteService.findSiteByUrl(HtmlService.getBaseUrl(url));
+        if (site == null)
+            return new IndexingToggleResponse(false, "This website was not added to the site list");
+
+        PageResponse pageResponse = HtmlService.getResponse(url);
+        pageResponse.setPath(HtmlService.getUrlWithoutDomainName(site.getUrl(), url));
+        pageService.savePage(pageResponse, site);
+
+        Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
         return new IndexingToggleResponse(true);
     }

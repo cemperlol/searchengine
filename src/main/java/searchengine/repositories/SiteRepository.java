@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
+import java.util.Optional;
+
 public interface SiteRepository extends CrudRepository<Site, Integer> {
 
     @Modifying
@@ -24,4 +26,7 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Transactional
     @Query("update Site s set s.lastError = :lastError where s.id = :id")
     void updateSiteLastError(@Param("lastError") String lastError, @Param("id") int id);
+
+    @Query("from Site s where s.url = :url")
+    Optional<Site> findSiteByUrl(@Param("url") String url);
 }
