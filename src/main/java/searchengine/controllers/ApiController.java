@@ -2,6 +2,7 @@ package searchengine.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import searchengine.dto.indexing.IndexingToggleResponse;
@@ -49,6 +50,17 @@ public class ApiController {
 
         IndexingToggleResponse response = indexator.stopIndexing();
         indexator = null;
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/indexPage")
+    public ResponseEntity<IndexingToggleResponse> indexPage(String url) {
+        if (indexator != null)
+            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
+
+        indexator = new IndexingServiceImpl(siteService, pageService);
+        IndexingToggleResponse response = indexator.
+
         return ResponseEntity.ok(response);
     }
 }

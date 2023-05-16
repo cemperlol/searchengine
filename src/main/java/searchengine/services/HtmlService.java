@@ -77,4 +77,8 @@ public abstract class HtmlService {
         String domainName = siteUrl.substring(siteUrl.indexOf(".") + 1);
         return pageUrl.substring(pageUrl.indexOf(domainName) + domainName.length());
     }
+
+    public static String getBaseUrl(String url) {
+        return url.substring(0, url.indexOf("://" + 3, '/'));
+    }
 }

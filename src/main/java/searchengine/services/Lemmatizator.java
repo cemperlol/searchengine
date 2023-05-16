@@ -2,6 +2,7 @@ package searchengine.services;
 
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 import searchengine.model.Site;
 
@@ -12,17 +13,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class Lemmatizator {
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
-    public static Map<String, Integer> getLemmas(Site site, String text) {
+    public static Map<String, Integer> getLemmas(Site site, Document doc) {
         if (russianLuceneMorph == null) return null; //TODO: add lemmatizator exceptions
         Map<String, Integer> lemmas = new HashMap<>();
-        text = text.toLowerCase(Locale.ROOT);
+        String text = clearFromHtml(doc);
         Matcher matcher = Pattern.compile("([а-яё]+[.]?[а-яё]+)+").matcher(text);
 
         while(matcher.find()) {
@@ -30,10 +30,14 @@ public class Lemmatizator {
 
             List<String> wordNormalForms = russianLuceneMorph.getNormalForms(word).stream()
                     .filter(f -> !checkIfServicePart(f)).toList();
-            wordNormalForms.forEach(lemma -> lemmas.put(lemma, lemmas.getOrDefault(lemma, 0) + 1));
+            wordNormalForms.forEach(lemma -> lemmas.put(lemma, 1));
         }
 
         return lemmas;
+    }
+
+    public static String clearFromHtml(Document doc) {
+        return doc.wholeText().toLowerCase();
     }
 
     public static void saveLemmas(List<String> lemmas) {

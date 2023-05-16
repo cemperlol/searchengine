@@ -86,6 +86,14 @@ public class IndexingServiceImpl
     }
 
     @Override
+    public IndexingToggleResponse indexPage(String url) {
+        if (siteService.findSiteByUrl(HtmlService.getBaseUrl(url)) == null)
+            return new IndexingToggleResponse(false, "This website was not added into the site list");
+
+        return new IndexingToggleResponse(true);
+    }
+
+    @Override
     protected IndexingToggleResponse compute() {
         pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
