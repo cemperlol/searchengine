@@ -52,6 +52,8 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse startIndexing() {
+        if (pool != null && !pool.isQuiescent())
+            return new IndexingToggleResponse(false, "Indexing already started");
         clearTablesBeforeStart();
         pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
@@ -87,14 +89,14 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse indexPage(String url) {
-        url = HtmlService.makeUrlWithoutSlashEnd(url).concat("/");
-        Site site = siteService.findSiteByUrl(HtmlService.getBaseUrl(url));
+        site = siteService.findSiteByUrl(HtmlService.getBaseUrl(url));
         if (site == null)
             return new IndexingToggleResponse(false, "This website was not added to the site list");
+        pageUrl = HtmlService
+                .getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithoutSlashEnd(url).concat("/"));
 
-        PageResponse pageResponse = HtmlService.getResponse(url);
-        pageResponse.setPath(HtmlService.getUrlWithoutDomainName(site.getUrl(), url));
-        pageService.savePage(pageResponse, site);
+        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
+        savePage(pageResponse);
 
         Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
@@ -129,6 +131,7 @@ public class IndexingServiceImpl
     protected void savePage(PageResponse pageResponse) {
         pageResponse.setPath(pageUrl);
         pageService.savePage(pageResponse, site);
+        Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
     }
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {

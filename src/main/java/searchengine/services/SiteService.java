@@ -57,7 +57,8 @@ public class SiteService {
     }
 
     public Site findSiteByUrl(String url) {
-        return siteRepository.findSiteByUrl(url).orElse(null);
+        Site site = siteRepository.findSiteByUrl(url.replace("://www.", "://")).orElse(null);
+        return site;
     }
 
     public Site findSiteById(int id) {

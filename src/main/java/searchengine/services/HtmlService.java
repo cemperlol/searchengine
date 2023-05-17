@@ -80,6 +80,6 @@ public abstract class HtmlService {
 
     public static String getBaseUrl(String url) {
         url = HtmlService.makeUrlWithoutSlashEnd(url).concat("/");
-        return url.substring(0, url.indexOf("/", url.indexOf("://")));
+        return url.substring(0, url.indexOf("/", url.indexOf("://") + 3));
     }
 }

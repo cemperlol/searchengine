@@ -1,12 +1,10 @@
 package searchengine.controllers;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.model.Site;
 import searchengine.services.*;
 
 @RestController
@@ -34,8 +32,8 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<IndexingToggleResponse> startIndexing() {
-        if (indexator != null)
-            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
+//        if (indexator != null)
+//            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
 
         indexator = new IndexingServiceImpl(siteService, pageService);
         IndexingToggleResponse response = indexator.startIndexing();
@@ -54,10 +52,10 @@ public class ApiController {
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<IndexingToggleResponse> indexPage(String url) {
-        if (indexator != null)
-            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
-
+    public ResponseEntity<IndexingToggleResponse> indexPage(@RequestParam String url) {
+//        if (indexator != null)
+//            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
+        Site site = siteService.saveIndexingSite(siteService.getSites().get(0));
         indexator = new IndexingServiceImpl(siteService, pageService);
         IndexingToggleResponse response = indexator.indexPage(url);
 

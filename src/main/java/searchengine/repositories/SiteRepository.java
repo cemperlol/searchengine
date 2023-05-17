@@ -27,6 +27,6 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Query("update Site s set s.lastError = :lastError where s.id = :id")
     void updateSiteLastError(@Param("lastError") String lastError, @Param("id") int id);
 
-    @Query("from Site s where s.url = :url")
+    @Query("select s from Site s where s.url = :url")
     Optional<Site> findSiteByUrl(@Param("url") String url);
 }
