@@ -6,6 +6,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
+import searchengine.model.Lemma;
+import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
@@ -44,17 +46,26 @@ public class IndexingServiceImpl
         this.pageUrl = pageUrl;
     }
 
-    @Override
-    public void clearTablesBeforeStart() {
+    public void clearTablesBeforeStartIndexing() {
+        IndexService.deleteAll();
+        LemmaService.deleteAll();
         pageService.deleteAllPages();
         siteService.deleteAllSites();
+    }
+
+    public void clearTablesBeforeIndexPage() {
+        int pageId = pageService.findByPathAndSiteId(pageUrl, site.getId()).getId();
+        List<Lemma> lemmas = IndexService.getLemmasByPageId(pageId);
+        IndexService.deleteIndexByPageId(pageId);
+        LemmaService.deletePageInfo(lemmas);
+        pageService.deletePageById(pageId);
     }
 
     @Override
     public IndexingToggleResponse startIndexing() {
         if (pool != null && !pool.isQuiescent())
             return new IndexingToggleResponse(false, "Indexing already started");
-        clearTablesBeforeStart();
+        clearTablesBeforeStartIndexing();
         pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
 
         for (searchengine.config.Site configSite : siteService.getSites()) {
@@ -72,11 +83,6 @@ public class IndexingServiceImpl
                 r = new IndexingToggleResponse(false, "No indexing is running"));
 
         pool.shutdownNow();
-        try {
-            pool.awaitTermination(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            ApplicationLogger.log(e);
-        }
         for (Site site : siteService.findAllSites()) {
             if (site.getStatus() != SiteStatus.INDEXED) {
                 siteService.updateSiteLastError(site.getId(), "User stopped indexing");
@@ -95,10 +101,10 @@ public class IndexingServiceImpl
         pageUrl = HtmlService
                 .getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithoutSlashEnd(url).concat("/"));
 
+        clearTablesBeforeIndexPage();
+
         PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
         savePage(pageResponse);
-
-        Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
         return new IndexingToggleResponse(true);
     }
@@ -127,8 +133,10 @@ public class IndexingServiceImpl
 
     protected void savePage(PageResponse pageResponse) {
         pageResponse.setPath(pageUrl);
-        pageService.savePage(pageResponse, site);
-        Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
+        Page page = pageService.savePage(pageResponse, site);
+        Map<Lemma, Integer> lemmas = Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
+        if (lemmas == null) return;
+        lemmas.forEach((lemma, frequency) -> IndexService.saveIndex(page, lemma, frequency));
     }
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {

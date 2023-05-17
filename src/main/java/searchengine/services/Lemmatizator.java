@@ -31,23 +31,25 @@ public abstract class Lemmatizator {
 
     public static Map<Lemma, Integer> getLemmas(Site site, Document doc) {
         if (russianLuceneMorph == null) return null; //TODO: add lemmatizator exceptions
-        Map<Lemma, Integer> lemmas = new HashMap<>();
+        Map<Lemma, Integer> lemmasAndFrequency = new HashMap<>();
         String text = clearFromHtml(doc);
         Matcher matcher = Pattern.compile("([а-яё]+[.]?[а-яё]+)+").matcher(text);
 
-        Set<String> wordNormalForms = new HashSet<>();
+        List<String> wordNormalForms = new ArrayList<>();
         while(matcher.find()) {
             String word = text.substring(matcher.start(), matcher.end());
 
              wordNormalForms.addAll(russianLuceneMorph.getNormalForms(word).stream()
                      .filter(f -> !checkIfServicePart(f)).distinct().toList());
         }
+        List<Lemma> lemmas = lemmaService.saveAllLemmas(wordNormalForms.stream().distinct().toList(), site);
         wordNormalForms.forEach(lemmaValue -> {
-            Lemma lemma = lemmaService.saveLemma(lemmaValue, site);
-            lemmas.put(lemma, lemma.getFrequency());
+            Lemma lemma = lemmas.stream().filter(l -> l.getLemma().equals(lemmaValue)).findFirst().orElse(null);
+            if (lemma != null)
+                lemmasAndFrequency.put(lemma, lemmasAndFrequency.getOrDefault(lemma, 1) + 1);
         });
 
-        return lemmas;
+        return lemmasAndFrequency;
     }
 
     public static String clearFromHtml(Document doc) {

@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.model.Site;
+import searchengine.repositories.IndexRepository;
+import searchengine.repositories.LemmaRepository;
 import searchengine.services.*;
 
 @RestController
@@ -59,7 +61,10 @@ public class ApiController {
 
     @Autowired
     @GetMapping
-    public void configureLemmatizator(LemmaService lemmaService) {
+    public void configureLemmatizator(LemmaRepository lemmaRepository, LemmaService lemmaService,
+                                      IndexRepository indexRepository) {
+        LemmaService.setLemmaRepository(lemmaRepository);
         Lemmatizator.setLemmaService(lemmaService);
+        IndexService.setIndexRepository(indexRepository);
     }
 }

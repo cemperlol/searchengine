@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
-    @Query("select l from Lemma as l where l.lemma = :lemmaValue and l.site.id = :siteId")
+    @Query("select l from Lemma l where l.lemma = :lemmaValue and l.site.id = :siteId")
     Optional<Lemma> getLemmaByLemmaValueAndSiteId(@Param("lemmaValue") String lemmaValue,
                                                   @Param("siteId") int siteId);
 

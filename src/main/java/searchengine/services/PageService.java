@@ -37,6 +37,10 @@ public class PageService {
         return pageRepository.selectByPathAndSiteId(path, siteId);
     }
 
+    public void deletePageById(int pageId) {
+        pageRepository.deleteById(pageId);
+    }
+
     public void deleteAllPages() {
         pageRepository.deleteAll();
     }
