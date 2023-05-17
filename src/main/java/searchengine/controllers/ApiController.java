@@ -1,5 +1,6 @@
 package searchengine.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
@@ -32,9 +33,6 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<IndexingToggleResponse> startIndexing() {
-//        if (indexator != null)
-//            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
-
         indexator = new IndexingServiceImpl(siteService, pageService);
         IndexingToggleResponse response = indexator.startIndexing();
 
@@ -53,12 +51,15 @@ public class ApiController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingToggleResponse> indexPage(@RequestParam String url) {
-//        if (indexator != null)
-//            return ResponseEntity.ok(new IndexingToggleResponse(false, "Indexing already started"));
-        Site site = siteService.saveIndexingSite(siteService.getSites().get(0));
         indexator = new IndexingServiceImpl(siteService, pageService);
         IndexingToggleResponse response = indexator.indexPage(url);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Autowired
+    @GetMapping
+    public void configureLemmatizator(LemmaService lemmaService) {
+        Lemmatizator.setLemmaService(lemmaService);
     }
 }

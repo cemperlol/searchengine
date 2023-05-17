@@ -112,9 +112,6 @@ public class IndexingServiceImpl
         PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
         savePage(pageResponse);
 
-        if (pageResponse.getResponse().statusCode() != 200)
-            siteService.updateSiteLastError(site.getId(), pageResponse.getCauseOfError());
-
         site = siteService.updateSiteStatusTime(site.getId());
         Document page = HtmlService.parsePage(pageResponse.getResponse());
         if (!pool.isShutdown()) executeDelay();

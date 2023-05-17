@@ -33,6 +33,7 @@ public class LemmaService {
             return lemmaRepository.save(lemma);
         }
 
-        return lemmaRepository.updateLemmaFrequencyById(lemma.getId(), lemma.getFrequency() + 1);
+        lemmaRepository.updateLemmaFrequencyById(lemma.getId(), lemma.getFrequency() + 1);
+        return lemmaRepository.findById(lemma.getId()).orElse(null);
     }
 }

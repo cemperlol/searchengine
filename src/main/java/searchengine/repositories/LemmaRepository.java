@@ -18,5 +18,5 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     @Modifying
     @Transactional
     @Query("update Lemma l set l.frequency = :frequency where l.id = :id")
-    Lemma updateLemmaFrequencyById(@Param("id") int id, @Param("frequency") int frequency);
+    void updateLemmaFrequencyById(@Param("id") int id, @Param("frequency") int frequency);
 }
