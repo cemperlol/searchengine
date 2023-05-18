@@ -61,10 +61,8 @@ public class ApiController {
 
     @Autowired
     @GetMapping
-    public void configureLemmatizator(LemmaRepository lemmaRepository, LemmaService lemmaService,
-                                      IndexRepository indexRepository) {
+    public void configureLemmatizator(LemmaRepository lemmaRepository, IndexRepository indexRepository) {
         LemmaService.setLemmaRepository(lemmaRepository);
-        Lemmatizator.setLemmaService(lemmaService);
         IndexService.setIndexRepository(indexRepository);
     }
 }

@@ -20,20 +20,20 @@ public class LemmaService {
         LemmaService.lemmaRepository = lemmaRepository;
     }
 
-    public Lemma getLemmaById(int id) {
+    public static Lemma getLemmaById(int id) {
         return lemmaRepository.findById(id).orElse(null);
     }
-    public Lemma getLemmaByLemmaValueAndSiteId(String lemmaValue, int siteId) {
+    public static Lemma getLemmaByLemmaValueAndSiteId(String lemmaValue, int siteId) {
         return lemmaRepository.getLemmaByLemmaValueAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
-    public List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
+    public static List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
         List<Lemma> lemmas = new ArrayList<>();
         lemmaValues.forEach(lemmaValue -> lemmas.add(saveLemma(lemmaValue, site)));
         return lemmas;
     }
 
-    public Lemma saveLemma(String lemmaValue, Site site) {
+    public static Lemma saveLemma(String lemmaValue, Site site) {
         Lemma lemma = getLemmaByLemmaValueAndSiteId(lemmaValue, site.getId());
         if (lemma == null) {
             lemma = new Lemma();

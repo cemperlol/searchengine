@@ -134,9 +134,10 @@ public class IndexingServiceImpl
     protected void savePage(PageResponse pageResponse) {
         pageResponse.setPath(pageUrl);
         Page page = pageService.savePage(pageResponse, site);
-        Map<Lemma, Integer> lemmas = Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
-        if (lemmas == null) return;
-        lemmas.forEach((lemma, frequency) -> IndexService.saveIndex(page, lemma, frequency));
+        Map<String, Integer> lemmasAndFrequency =
+                Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
+        LemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site)
+                .forEach(lemma -> IndexService.saveIndex(page, lemma, lemmasAndFrequency.get(lemma.getLemma())));
     }
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {
