@@ -23,18 +23,33 @@ public class LemmaService {
     public static Lemma getLemmaById(int id) {
         return lemmaRepository.findById(id).orElse(null);
     }
-    public static Lemma getLemmaByLemmaValueAndSiteId(String lemmaValue, int siteId) {
-        return lemmaRepository.getLemmaByLemmaValueAndSiteId(lemmaValue, siteId).orElse(null);
+    public static Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
+        return lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
     public static List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
         List<Lemma> lemmas = new ArrayList<>();
-        lemmaValues.forEach(lemmaValue -> lemmas.add(saveLemma(lemmaValue, site)));
+
+        lemmaValues.forEach(lemmaValue -> {
+            Lemma lemma = getByLemmaAndSiteId(lemmaValue, site.getId());
+            if (lemma == null) {
+                lemma = new Lemma();
+                lemma.setLemma(lemmaValue);
+                lemma.setSite(site);
+                lemma.setFrequency(1);
+            } else {
+                lemma.setFrequency(lemma.getFrequency() + 1);
+            }
+
+            lemmas.add(lemma);
+        });
+
+        lemmaRepository.saveAll(lemmas);
         return lemmas;
     }
 
     public static Lemma saveLemma(String lemmaValue, Site site) {
-        Lemma lemma = getLemmaByLemmaValueAndSiteId(lemmaValue, site.getId());
+        Lemma lemma = getByLemmaAndSiteId(lemmaValue, site.getId());
         if (lemma == null) {
             lemma = new Lemma();
             lemma.setLemma(lemmaValue);
