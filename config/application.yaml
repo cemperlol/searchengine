@@ -20,6 +20,8 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+#  transaction:
+#    annotation-driven: true
 
 indexing-settings:
   sites:

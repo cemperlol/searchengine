@@ -11,16 +11,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public abstract class IndexService {
+public class IndexService {
 
-    private static IndexRepository indexRepository;
+    private final IndexRepository indexRepository;
 
     @Autowired
-    public static void setIndexRepository(IndexRepository indexRepository) {
-        IndexService.indexRepository = indexRepository;
+    public IndexService(IndexRepository indexRepository) {
+        this.indexRepository = indexRepository;
     }
     
-    public static Index saveIndex(Page page, Lemma lemma, int frequency) {
+    public Index saveIndex(Page page, Lemma lemma, int frequency) {
         Index index = new Index();
         index.setPage(page);
         index.setLemma(lemma);
@@ -29,18 +29,18 @@ public abstract class IndexService {
         return indexRepository.save(index);
     }
 
-    public static List<Lemma> getLemmasByPageId(int pageId) {
+    public List<Lemma> getLemmasByPageId(int pageId) {
         List<Lemma> lemmas = new ArrayList<>();
         indexRepository.getIndexesByPageId(pageId).forEach(i -> lemmas.add(i.getLemma()));
 
         return lemmas;
     }
 
-    public static void deleteIndexByPageId(int pageId) {
+    public void deleteIndexByPageId(int pageId) {
         indexRepository.deleteIndexByPageId(pageId);
     }
 
-    public static void deleteAll() {
+    public void deleteAll() {
         indexRepository.deleteAll();
     }
 }

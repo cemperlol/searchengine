@@ -6,6 +6,7 @@ import searchengine.model.Lemma;
 import searchengine.model.Site;
 import searchengine.repositories.LemmaRepository;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -13,64 +14,59 @@ import java.util.List;
 @Service
 public class LemmaService {
 
-    private static LemmaRepository lemmaRepository;
+    private final LemmaRepository lemmaRepository;
 
     @Autowired
-    public static void setLemmaRepository(LemmaRepository lemmaRepository) {
-        LemmaService.lemmaRepository = lemmaRepository;
+    public LemmaService(LemmaRepository lemmaRepository) {
+        this.lemmaRepository = lemmaRepository;
     }
 
-    public static Lemma getLemmaById(int id) {
+    public Lemma getLemmaById(int id) {
         return lemmaRepository.findById(id).orElse(null);
     }
-    public static Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
-        return lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
+
+    public Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
+        return  lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
-    public static List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
+    @Transactional
+    public List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
         List<Lemma> lemmas = new ArrayList<>();
 
         lemmaValues.forEach(lemmaValue -> {
-            Lemma lemma = getByLemmaAndSiteId(lemmaValue, site.getId());
-            if (lemma == null) {
-                lemma = new Lemma();
-                lemma.setLemma(lemmaValue);
-                lemma.setSite(site);
-                lemma.setFrequency(1);
-            } else {
-                lemma.setFrequency(lemma.getFrequency() + 1);
-            }
-
-            lemmas.add(lemma);
+            lemmas.add(createLemma(lemmaValue, site));
         });
 
         lemmaRepository.saveAll(lemmas);
         return lemmas;
     }
 
-    public static Lemma saveLemma(String lemmaValue, Site site) {
+    public Lemma saveLemma(String lemmaValue, Site site) {
+        return lemmaRepository.save(createLemma(lemmaValue, site));
+    }
+
+    private Lemma createLemma(String lemmaValue, Site site) {
         Lemma lemma = getByLemmaAndSiteId(lemmaValue, site.getId());
         if (lemma == null) {
             lemma = new Lemma();
             lemma.setLemma(lemmaValue);
             lemma.setSite(site);
             lemma.setFrequency(1);
-
-            return lemmaRepository.save(lemma);
+        } else {
+            lemma.setFrequency(lemma.getFrequency() + 1);
         }
 
-        lemmaRepository.updateLemmaFrequencyById(lemma.getId(), lemma.getFrequency() + 1);
-        return lemmaRepository.findById(lemma.getId()).orElse(null);
+        return lemma;
     }
 
-    public static void deletePageInfo(List<Lemma> lemmas) {
+    public void deletePageInfo(List<Lemma> lemmas) {
         lemmas.forEach(lemma -> {
             if (lemma.getFrequency() == 1.0) lemmaRepository.deleteById(lemma.getId());
             else lemmaRepository.updateLemmaFrequencyById(lemma.getId(), lemma.getFrequency() - 1);
         });
     }
 
-    public static void deleteAll() {
+    public void deleteAll() {
         lemmaRepository.deleteAll();
     }
 }

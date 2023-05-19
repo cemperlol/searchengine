@@ -154,3 +154,11 @@ databaseChangeLog:
                   name: path(255)
             indexName: path_index
             tableName: page
+        - createIndex:
+            columns:
+              - column:
+                  name: lemma
+              - column:
+                  name: site_id
+            indexName: site_lemma_index
+            tableName: lemma

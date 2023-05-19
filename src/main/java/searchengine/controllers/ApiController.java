@@ -1,13 +1,9 @@
 package searchengine.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.model.Site;
-import searchengine.repositories.IndexRepository;
-import searchengine.repositories.LemmaRepository;
 import searchengine.services.*;
 
 @RestController
@@ -20,12 +16,19 @@ public class ApiController {
 
     private final PageService pageService;
 
+    private final LemmaService lemmaService;
+
+    private final IndexService indexService;
+
     private IndexingService indexator;
 
-    public ApiController(StatisticsService statisticsService, SiteService siteService, PageService pageService) {
+    public ApiController(StatisticsService statisticsService, SiteService siteService, PageService pageService,
+                         LemmaService lemmaService, IndexService indexService) {
         this.statisticsService = statisticsService;
         this.siteService = siteService;
         this.pageService = pageService;
+        this.lemmaService = lemmaService;
+        this.indexService = indexService;
     }
 
     @GetMapping("/statistics")
@@ -35,7 +38,7 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<IndexingToggleResponse> startIndexing() {
-        indexator = new IndexingServiceImpl(siteService, pageService);
+        indexator = new IndexingServiceImpl(siteService, pageService, lemmaService, indexService);
         IndexingToggleResponse response = indexator.startIndexing();
 
         return ResponseEntity.ok(response);
@@ -53,16 +56,9 @@ public class ApiController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingToggleResponse> indexPage(@RequestParam String url) {
-        indexator = new IndexingServiceImpl(siteService, pageService);
+        if (indexator == null) indexator = new IndexingServiceImpl(siteService, pageService, lemmaService, indexService);
         IndexingToggleResponse response = indexator.indexPage(url);
 
         return ResponseEntity.ok(response);
-    }
-
-    @Autowired
-    @GetMapping
-    public void configureLemmatizator(LemmaRepository lemmaRepository, IndexRepository indexRepository) {
-        LemmaService.setLemmaRepository(lemmaRepository);
-        IndexService.setIndexRepository(indexRepository);
     }
 }

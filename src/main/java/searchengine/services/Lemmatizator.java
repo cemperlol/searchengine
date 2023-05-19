@@ -9,13 +9,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public abstract class Lemmatizator {
 
     private static final Set<String> SERVICE_PARTS = Set.of("МЕЖД", "СОЮЗ", "ПРЕДЛ");
-    private static final Pattern PATTERN = Pattern.compile("[\\p{IsCyrillic}]+");
+    private static final Pattern PATTERN = Pattern.compile("[а-яё]+");
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
@@ -28,7 +27,6 @@ public abstract class Lemmatizator {
 
         while (matcher.find()) {
             String word = text.substring(matcher.start(), matcher.end());
-
             if (word.isBlank() || checkIfServicePart(word)) continue;
             lemmas.merge(russianLuceneMorph.getNormalForms(word).get(0), 1, Integer::sum);
         }
@@ -37,7 +35,7 @@ public abstract class Lemmatizator {
     }
 
     public static String clearFromHtml(Document doc) {
-        return doc.text().replaceAll("([^\\p{IsCyrillic}\\s])+", " ").toLowerCase();
+        return doc.text().replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е").toLowerCase();
     }
 
     private static boolean checkIfServicePart(String wordForm) {

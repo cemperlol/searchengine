@@ -27,6 +27,10 @@ public class IndexingServiceImpl
 
     private static PageService pageService;
 
+    private static LemmaService lemmaService;
+
+    private static IndexService indexService;
+
     private static ForkJoinPool pool;
 
     private Site site;
@@ -37,9 +41,11 @@ public class IndexingServiceImpl
             new AtomicReference<>(new IndexingToggleResponse(false,
                     "Indexation have not started yet"));
 
-    public IndexingServiceImpl(SiteService siteService, PageService pageService) {
+    public IndexingServiceImpl(SiteService siteService, PageService pageService, LemmaService lemmaService, IndexService indexService) {
         IndexingServiceImpl.siteService = siteService;
         IndexingServiceImpl.pageService = pageService;
+        IndexingServiceImpl.lemmaService = lemmaService;
+        IndexingServiceImpl.indexService = indexService;
     }
 
     private IndexingServiceImpl(Site site, String pageUrl) {
@@ -48,17 +54,17 @@ public class IndexingServiceImpl
     }
 
     public void clearTablesBeforeStartIndexing() {
-        IndexService.deleteAll();
-        LemmaService.deleteAll();
+        indexService.deleteAll();
+        lemmaService.deleteAll();
         pageService.deleteAllPages();
         siteService.deleteAllSites();
     }
 
     public void clearTablesBeforeIndexPage() {
         int pageId = pageService.findByPathAndSiteId(pageUrl, site.getId()).getId();
-        List<Lemma> lemmas = IndexService.getLemmasByPageId(pageId);
-        IndexService.deleteIndexByPageId(pageId);
-        LemmaService.deletePageInfo(lemmas);
+        List<Lemma> lemmas = indexService.getLemmasByPageId(pageId);
+        indexService.deleteIndexByPageId(pageId);
+        lemmaService.deletePageInfo(lemmas);
         pageService.deletePageById(pageId);
     }
 
@@ -67,7 +73,7 @@ public class IndexingServiceImpl
         if (pool != null && !pool.isQuiescent())
             return new IndexingToggleResponse(false, "Indexing already started");
         clearTablesBeforeStartIndexing();
-        pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        pool = new ForkJoinPool();
 
         for (searchengine.config.Site configSite : siteService.getSites()) {
             Site site = siteService.saveIndexingSite(configSite);
@@ -112,7 +118,13 @@ public class IndexingServiceImpl
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
             return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
 
-        Document page = savePageAndGetDocument();
+        Document page;
+        try {
+            page = savePageAndGetDocument();
+        } catch (Throwable e) {
+            return lastResponse.updateAndGet(itr ->
+                    itr = new IndexingToggleResponse(false, "Failed to index site, " + site.getUrl().concat(pageUrl) + " unavailable"));
+        }
         site = siteService.updateSiteStatusTime(site.getId());
         if (!pool.isShutdown()) executeDelay();
         List<IndexingServiceImpl> subtasks = createSubtasks(page);
@@ -123,7 +135,7 @@ public class IndexingServiceImpl
             return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
 
         return lastResponse.updateAndGet(itr ->
-                itr = new IndexingToggleResponse(false, "Indexing failed"));
+                itr = new IndexingToggleResponse(false, lastResponse.get().getError()));
     }
 
     protected Document savePageAndGetDocument() {
@@ -133,8 +145,8 @@ public class IndexingServiceImpl
         Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
         Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
-        LemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site)
-                .forEach(lemma -> IndexService.saveIndex(page, lemma, lemmasAndFrequency.get(lemma.getLemma())));
+        lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site)
+                .forEach(lemma -> indexService.saveIndex(page, lemma, lemmasAndFrequency.get(lemma.getLemma())));
 
         return doc;
     }
