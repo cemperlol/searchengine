@@ -145,8 +145,7 @@ public class IndexingServiceImpl
         Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
         Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
-        lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site)
-                .forEach(lemma -> indexService.saveIndex(page, lemma, lemmasAndFrequency.get(lemma.getLemma())));
+        indexService.saveAllIndexes(page, lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site), lemmasAndFrequency.values().stream().toList());
 
         return doc;
     }
