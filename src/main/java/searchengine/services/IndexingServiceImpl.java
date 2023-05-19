@@ -34,7 +34,8 @@ public class IndexingServiceImpl
     private String pageUrl;
 
     private final AtomicReference<IndexingToggleResponse> lastResponse =
-            new AtomicReference<>(new IndexingToggleResponse(false, "Indexation have not started yet"));
+            new AtomicReference<>(new IndexingToggleResponse(false,
+                    "Indexation have not started yet"));
 
     public IndexingServiceImpl(SiteService siteService, PageService pageService) {
         IndexingServiceImpl.siteService = siteService;
@@ -83,14 +84,12 @@ public class IndexingServiceImpl
                 r = new IndexingToggleResponse(false, "No indexing is running"));
 
         pool.shutdownNow();
-        for (Site site : siteService.findAllSites()) {
-            if (site.getStatus() != SiteStatus.INDEXED) {
-                siteService.updateSiteLastError(site.getId(), "User stopped indexing");
-                siteService.updateSiteStatus(site.getId(), SiteStatus.FAILED);
-            }
-        }
+        siteService.findAllSites().stream().filter(s -> !s.getStatus().equals(SiteStatus.INDEXED)).forEach(s -> {
+            siteService.updateSiteLastError(s.getId(), "User stopped indexing");
+            siteService.updateSiteStatus(s.getId(), SiteStatus.FAILED);
+        });
 
-        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
+        return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
     }
 
     @Override
@@ -102,9 +101,7 @@ public class IndexingServiceImpl
                 .getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithoutSlashEnd(url).concat("/"));
 
         clearTablesBeforeIndexPage();
-
-        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
-        savePage(pageResponse);
+        savePageAndGetDocument();
 
         return new IndexingToggleResponse(true);
     }
@@ -113,31 +110,33 @@ public class IndexingServiceImpl
     protected IndexingToggleResponse compute() {
         pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
-            return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
+            return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
 
-        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
-        savePage(pageResponse);
-
+        Document page = savePageAndGetDocument();
         site = siteService.updateSiteStatusTime(site.getId());
-        Document page = HtmlService.parsePage(pageResponse.getResponse());
         if (!pool.isShutdown()) executeDelay();
         List<IndexingServiceImpl> subtasks = createSubtasks(page);
         List<IndexingToggleResponse> results = new ArrayList<>();
         subtasks.forEach(s -> results.add(s.invoke()));
 
-        if (results.stream().filter(IndexingToggleResponse::isResult).findFirst().orElse(null) != null) {
-            return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
-        }
-        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(false, "Indexing failed"));
+        if (results.stream().filter(IndexingToggleResponse::isResult).findFirst().orElse(null) != null)
+            return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
+
+        return lastResponse.updateAndGet(itr ->
+                itr = new IndexingToggleResponse(false, "Indexing failed"));
     }
 
-    protected void savePage(PageResponse pageResponse) {
+    protected Document savePageAndGetDocument() {
+        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
         pageResponse.setPath(pageUrl);
         Page page = pageService.savePage(pageResponse, site);
-        Map<String, Integer> lemmasAndFrequency =
-                Lemmatizator.getLemmas(site, HtmlService.parsePage(pageResponse.getResponse()));
+        Document doc = HtmlService.parsePage(pageResponse.getResponse());
+
+        Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
         LemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site)
                 .forEach(lemma -> IndexService.saveIndex(page, lemma, lemmasAndFrequency.get(lemma.getLemma())));
+
+        return doc;
     }
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {

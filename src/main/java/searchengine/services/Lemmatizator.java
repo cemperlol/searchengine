@@ -3,48 +3,49 @@ package searchengine.services;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.nodes.Document;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.model.Site;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public abstract class Lemmatizator {
 
+    private static final Set<String> SERVICE_PARTS = Set.of("МЕЖД", "СОЮЗ", "ПРЕДЛ");
+    private static final Pattern PATTERN = Pattern.compile("[\\p{IsCyrillic}]+");
+
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
-    public static Map<String, Integer> getLemmas(Site site, Document doc) {
-        if (russianLuceneMorph == null) return new HashMap<>(); //TODO: add lemmatizator exceptions
-        Map<String, Integer> lemmas = new HashMap<>();
-        String text = clearFromHtml(doc);
-        Matcher matcher = Pattern.compile("([а-яё]+[.]?[а-яё]+)+").matcher(text);
+    public static Map<String, Integer> getLemmas(Document doc) {
+        if (doc == null || russianLuceneMorph == null) return new HashMap<>(); //TODO: add lemmatizator exceptions
 
-        List<String> wordNormalForms = new ArrayList<>();
-        while(matcher.find()) {
+        String text = clearFromHtml(doc);
+        Matcher matcher = PATTERN.matcher(text);
+        Map<String, Integer> lemmas = new HashMap<>();
+
+        while (matcher.find()) {
             String word = text.substring(matcher.start(), matcher.end());
 
-             wordNormalForms.addAll(russianLuceneMorph.getNormalForms(word).stream()
-                     .filter(f -> !checkIfServicePart(f)).distinct().toList());
+            if (word.isBlank() || checkIfServicePart(word)) continue;
+            lemmas.merge(russianLuceneMorph.getNormalForms(word).get(0), 1, Integer::sum);
         }
-        wordNormalForms.forEach(lemma -> {
-            if (lemma != null)
-                lemmas.put(lemma, lemmas.getOrDefault(lemma, 1) + 1);
-        });
 
         return lemmas;
     }
 
     public static String clearFromHtml(Document doc) {
-        return doc.wholeText().toLowerCase();
+        return doc.text().replaceAll("([^\\p{IsCyrillic}\\s])+", " ").toLowerCase();
     }
 
     private static boolean checkIfServicePart(String wordForm) {
-        return wordForm.contains("МЕЖД") || wordForm.contains("СОЮЗ") ||
-                wordForm.contains("ЧАСТ") || wordForm.contains("ПРЕДЛ");
+        for (String servicePart : SERVICE_PARTS) {
+            if (wordForm.contains(servicePart)) return true;
+        }
+
+        return false;
     }
 
     private static RussianLuceneMorphology getRussianMorphology() {

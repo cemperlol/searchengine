@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 @RequiredArgsConstructor
 public class IndexingToggleResponse {
+
     private final boolean result;
+
     private String error;
 }
