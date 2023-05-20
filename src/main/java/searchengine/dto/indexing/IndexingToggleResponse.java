@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class IndexingToggleResponse {
 
-    private final boolean result;
+    private final boolean success;
 
     private String error;
 }

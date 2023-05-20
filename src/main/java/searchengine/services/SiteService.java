@@ -51,6 +51,25 @@ public class SiteService {
         return site;
     }
 
+    public Site saveSucceedIndexSite(Site site) {
+        site.setStatus(SiteStatus.INDEXED);
+        site.setStatusTime(new Timestamp(System.currentTimeMillis()));
+
+        saveSite(site);
+
+        return site;
+    }
+
+    public Site saveFailedIndexSite(Site site, String errorMsg) {
+        site.setStatus(SiteStatus.FAILED);
+        site.setLastError(errorMsg);
+        site.setStatusTime(new Timestamp(System.currentTimeMillis()));
+
+        saveSite(site);
+
+        return site;
+    }
+
     public Site updateSiteStatusTime(int id) {
         siteRepository.updateSiteStatusTime(id);
         return siteRepository.findById(id).orElse(null);

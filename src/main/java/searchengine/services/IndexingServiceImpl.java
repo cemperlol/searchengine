@@ -3,7 +3,6 @@ package searchengine.services;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.scheduling.config.Task;
 import org.springframework.stereotype.Service;
 import searchengine.dto.indexing.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
@@ -15,6 +14,7 @@ import searchengine.model.Site;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Service
 @ComponentScan
@@ -78,13 +78,19 @@ public class IndexingServiceImpl
             pool.submit(task);
         });
 
-        CompletableFuture.runAsync(() -> smth(tasks));
+        tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
 
         return IndexingResponseGenerator.successResponse();
     }
 
-    private void smth(List<IndexingServiceImpl> tasks) {
-        System.out.println(getTasksResult(tasks));
+    private void processIndexingResult(IndexingServiceImpl task) {
+        IndexingToggleResponse result = getTasksResult(Stream.of(task).toList());
+
+        if (result.isSuccess()) {
+            siteService.saveSucceedIndexSite(task.site);
+        } else {
+            siteService.saveFailedIndexSite(task.site, result.getError());
+        }
     }
 
     @Override
@@ -171,7 +177,7 @@ public class IndexingServiceImpl
         tasks.forEach(t -> results.add(t.join()));
 
         IndexingToggleResponse totalResult = results.stream()
-                .filter(IndexingToggleResponse::isResult)
+                .filter(IndexingToggleResponse::isSuccess)
                 .findFirst()
                 .orElse(null);
 
