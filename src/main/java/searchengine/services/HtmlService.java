@@ -13,7 +13,7 @@ import java.io.IOException;
 public abstract class HtmlService {
 
     public static PageResponse getResponse(String url) {
-        PageResponse pageResponse = new PageResponse();
+        PageResponse pageResponse;
 
         try {
             Connection.Response response = Jsoup
@@ -28,10 +28,8 @@ public abstract class HtmlService {
             pageResponse = configurePageResponse(response);
         } catch (HttpStatusCodeException e) {
             pageResponse = configurePageResponse(e);
-
-            ApplicationLogger.log(e);
-        } catch (IOException e) {
-            ApplicationLogger.log(e);
+        } catch (Throwable e) {
+            return null;
         }
 
         return pageResponse;
@@ -73,13 +71,18 @@ public abstract class HtmlService {
         return url.charAt(urlLastSymbolIndex) == '/' ? url.substring(0, urlLastSymbolIndex) : url;
     }
 
+    public static String makeUrlWithSlashEnd(String url) {
+        return makeUrlWithoutSlashEnd(url).concat("/");
+    }
+
     public static String getUrlWithoutDomainName(String siteUrl, String pageUrl) {
         String domainName = siteUrl.substring(siteUrl.indexOf(".") + 1);
         return pageUrl.substring(pageUrl.indexOf(domainName) + domainName.length());
     }
 
     public static String getBaseUrl(String url) {
-        url = HtmlService.makeUrlWithoutSlashEnd(url).concat("/");
+        url = makeUrlWithSlashEnd(url);
+
         return url.substring(0, url.indexOf("/", url.indexOf("://") + 3));
     }
 }

@@ -8,6 +8,7 @@ import searchengine.model.SiteStatus;
 import searchengine.repositories.SiteRepository;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,13 +28,24 @@ public class SiteService {
         return siteRepository.save(site);
     }
 
+    public List<Site> saveIndexingSites() {
+        List<Site> sites = new ArrayList<>();
+
+        getSites().forEach(s -> sites.add(saveIndexingSite(s)));
+
+        return sites;
+    }
+
     public Site saveIndexingSite(searchengine.config.Site configSite) {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HtmlService
-                .makeUrlWithoutSlashEnd(configSite.getUrl().replace("://www.", "://")));
+        site.setUrl(HtmlService.makeUrlWithoutSlashEnd(
+                configSite.getUrl()
+                        .replace("://www.", "://")
+        ));
         site.setName(configSite.getName());
+
         saveSite(site);
 
         return site;
@@ -54,6 +66,13 @@ public class SiteService {
         siteRepository.updateSiteLastError(lastError, id);
         siteRepository.updateSiteStatusTime(id);
         return siteRepository.findById(id).orElse(null);
+    }
+
+    public void updateSitesOnIndexingStop() {
+        findAllSites().stream().filter(s -> !s.getStatus().equals(SiteStatus.INDEXED)).forEach(s -> {
+            updateSiteLastError(s.getId(), "User stopped indexing");
+            updateSiteStatus(s.getId(), SiteStatus.FAILED);
+        });
     }
 
     public Site findSiteByUrl(String url) {

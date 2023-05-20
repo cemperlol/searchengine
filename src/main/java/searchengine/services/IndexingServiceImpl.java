@@ -4,16 +4,15 @@ import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
+import searchengine.dto.indexing.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.model.SiteStatus;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 @Service
@@ -37,11 +36,8 @@ public class IndexingServiceImpl
 
     private String pageUrl;
 
-    private final AtomicReference<IndexingToggleResponse> lastResponse =
-            new AtomicReference<>(new IndexingToggleResponse(false,
-                    "Indexation have not started yet"));
-
-    public IndexingServiceImpl(SiteService siteService, PageService pageService, LemmaService lemmaService, IndexService indexService) {
+    public IndexingServiceImpl(SiteService siteService, PageService pageService,
+                               LemmaService lemmaService, IndexService indexService) {
         IndexingServiceImpl.siteService = siteService;
         IndexingServiceImpl.pageService = pageService;
         IndexingServiceImpl.lemmaService = lemmaService;
@@ -53,14 +49,14 @@ public class IndexingServiceImpl
         this.pageUrl = pageUrl;
     }
 
-    public void clearTablesBeforeStartIndexing() {
+    private void clearTablesBeforeStartIndexing() {
         indexService.deleteAll();
         lemmaService.deleteAll();
         pageService.deleteAllPages();
         siteService.deleteAllSites();
     }
 
-    public void clearTablesBeforeIndexPage() {
+    private void clearTablesBeforeIndexPage() {
         int pageId = pageService.findByPathAndSiteId(pageUrl, site.getId()).getId();
         List<Lemma> lemmas = indexService.getLemmasByPageId(pageId);
         indexService.deleteIndexByPageId(pageId);
@@ -70,96 +66,112 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse startIndexing() {
-        if (pool != null && !pool.isQuiescent())
-            return new IndexingToggleResponse(false, "Indexing already started");
+        if (pool != null && !pool.isQuiescent()) return IndexingResponseGenerator.failureIndexingAlreadyStarted();
         clearTablesBeforeStartIndexing();
         pool = new ForkJoinPool();
 
-        for (searchengine.config.Site configSite : siteService.getSites()) {
-            Site site = siteService.saveIndexingSite(configSite);
-            IndexingServiceImpl task = new IndexingServiceImpl(site, site.getUrl().concat("/"));
+        List<IndexingServiceImpl> tasks = new ArrayList<>();
+        siteService.saveIndexingSites().forEach(s -> {
+            IndexingServiceImpl task = new IndexingServiceImpl(s, s.getUrl().concat("/"));
+            tasks.add(task);
             pool.submit(task);
-        }
+        });
 
-        return lastResponse.updateAndGet(r -> r = new IndexingToggleResponse(true));
+//        notifier.notifyIndexingStarted(IndexingResponseGenerator.successResponse());
+
+        pool.shutdown();
+
+        return IndexingResponseGenerator.successResponse();
+//        return getTasksResult(tasks);
     }
 
     @Override
     public IndexingToggleResponse stopIndexing() {
-        if (pool == null) return lastResponse.updateAndGet(r ->
-                r = new IndexingToggleResponse(false, "No indexing is running"));
+        if (pool == null) return IndexingResponseGenerator.failureNoIndexingRunning();
 
         pool.shutdownNow();
-        siteService.findAllSites().stream().filter(s -> !s.getStatus().equals(SiteStatus.INDEXED)).forEach(s -> {
-            siteService.updateSiteLastError(s.getId(), "User stopped indexing");
-            siteService.updateSiteStatus(s.getId(), SiteStatus.FAILED);
-        });
+        siteService.updateSitesOnIndexingStop();
 
-        return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
+        return IndexingResponseGenerator.successResponse();
     }
 
     @Override
     public IndexingToggleResponse indexPage(String url) {
         site = siteService.findSiteByUrl(HtmlService.getBaseUrl(url));
-        if (site == null)
-            return new IndexingToggleResponse(false, "This website was not added to the site list");
-        pageUrl = HtmlService
-                .getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithoutSlashEnd(url).concat("/"));
+        if (site == null) return IndexingResponseGenerator.failureSiteNotAdded();
+        pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithSlashEnd(url));
 
         clearTablesBeforeIndexPage();
-        savePageAndGetDocument();
+        savePageInfoAndGetDocument();
 
-        return new IndexingToggleResponse(true);
+        return IndexingResponseGenerator.successResponse();
     }
 
     @Override
     protected IndexingToggleResponse compute() {
         pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
+
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
-            return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
-
-        Document page;
-        try {
-            page = savePageAndGetDocument();
-        } catch (Throwable e) {
-            return lastResponse.updateAndGet(itr ->
-                    itr = new IndexingToggleResponse(false, "Failed to index site, " + site.getUrl().concat(pageUrl) + " unavailable"));
-        }
-        site = siteService.updateSiteStatusTime(site.getId());
+            return IndexingResponseGenerator.successResponse();
         if (!pool.isShutdown()) executeDelay();
-        List<IndexingServiceImpl> subtasks = createSubtasks(page);
-        List<IndexingToggleResponse> results = new ArrayList<>();
-        subtasks.forEach(s -> results.add(s.invoke()));
 
-        if (results.stream().filter(IndexingToggleResponse::isResult).findFirst().orElse(null) != null)
-            return lastResponse.updateAndGet(itr -> itr = new IndexingToggleResponse(true));
+        Document doc = savePageInfoAndGetDocument();
+        if (doc == null) return IndexingResponseGenerator.failurePageUnavailable(site.getUrl().concat(pageUrl));
 
-        return lastResponse.updateAndGet(itr ->
-                itr = new IndexingToggleResponse(false, lastResponse.get().getError()));
+        site = siteService.updateSiteStatusTime(site.getId());
+
+        return getTasksResult(createSubtasks(doc));
     }
 
-    protected Document savePageAndGetDocument() {
+    private Document savePageInfoAndGetDocument() {
         PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
+        if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
         Page page = pageService.savePage(pageResponse, site);
+
         Document doc = HtmlService.parsePage(pageResponse.getResponse());
 
-        Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
-        indexService.saveAllIndexes(page, lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site), lemmasAndFrequency.values().stream().toList());
+        saveLemmasAndIndexes(page, doc);
 
         return doc;
     }
 
+    private void saveLemmasAndIndexes(Page page, Document doc) {
+        Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
+
+        List<Lemma> lemmas = lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site);
+        List<Integer> ranks = lemmasAndFrequency.values().stream().toList();
+
+        indexService.saveAllIndexes(page, lemmas, ranks);
+    }
+
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {
-        List<IndexingServiceImpl> subtasks = Collections.synchronizedList(new ArrayList<>());
         Pattern sitePattern = Pattern.compile(site.getUrl());
 
-        doc.select("a").eachAttr("abs:href").forEach(u -> {
-            if (sitePattern.matcher(u).find() && !u.contains("#"))
-                subtasks.add(new IndexingServiceImpl(site, HtmlService.makeUrlWithoutSlashEnd(u).concat("/")));
-        });
+        return doc.select("a").eachAttr("abs:href")
+                .stream()
+                .filter(u -> sitePattern.matcher(u).find() && !u.contains("#"))
+                .map(u -> {
+                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlService.makeUrlWithoutSlashEnd(u).concat("/"));
+                    subtask.fork();
+                    return subtask;
+                })
+                .toList();
+    }
 
-        return subtasks;
+
+
+    private IndexingToggleResponse getTasksResult(List<IndexingServiceImpl> tasks) {
+        List<IndexingToggleResponse> results = new ArrayList<>();
+        tasks.forEach(t -> results.add(t.join()));
+
+        IndexingToggleResponse totalResult = results.stream()
+                .filter(IndexingToggleResponse::isResult)
+                .findFirst().orElse(null);
+
+        if (totalResult == null) return IndexingResponseGenerator.successResponse();
+
+        return IndexingResponseGenerator.createFailureResponse(totalResult.getError());
     }
 
     protected void executeDelay() {
