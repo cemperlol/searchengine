@@ -1,10 +1,9 @@
-package searchengine.services;
+package searchengine.services.lemma;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
-import searchengine.repositories.LemmaRepository;
 
 import javax.transaction.Transactional;
 import java.util.ArrayList;

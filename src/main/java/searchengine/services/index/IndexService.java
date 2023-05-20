@@ -1,14 +1,12 @@
-package searchengine.services;
+package searchengine.services.index;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
-import searchengine.repositories.IndexRepository;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Service

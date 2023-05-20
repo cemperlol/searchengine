@@ -1,20 +1,19 @@
-package searchengine.services;
+package searchengine.utils;
 
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Service;
+import searchengine.services.logging.ApplicationLogger;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service
-public abstract class Lemmatizator {
+public class Lemmatizator {
 
     private static final Set<String> SERVICE_PARTS = Set.of("МЕЖД", "СОЮЗ", "ПРЕДЛ");
-    private static final Pattern PATTERN = Pattern.compile("[а-яё]+");
+    private static final Pattern PATTERN = Pattern.compile("\\b[а-яё]+([-.][а-яё]+)*\\b");
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 

@@ -1,11 +1,11 @@
-package searchengine.services;
+package searchengine.services.site;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.repositories.SiteRepository;
+import searchengine.utils.HtmlWorker;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class SiteService {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HtmlService.makeUrlWithoutSlashEnd(
+        site.setUrl(HtmlWorker.makeUrlWithoutSlashEnd(
                 configSite.getUrl()
                         .replace("://www.", "://")
         ));

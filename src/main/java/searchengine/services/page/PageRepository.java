@@ -1,4 +1,4 @@
-package searchengine.repositories;
+package searchengine.services.page;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

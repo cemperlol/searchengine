@@ -1,4 +1,4 @@
-package searchengine.repositories;
+package searchengine.services.lemma;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

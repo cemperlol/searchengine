@@ -4,7 +4,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.services.*;
+import searchengine.services.index.IndexService;
+import searchengine.services.lemma.LemmaService;
+import searchengine.services.page.PageService;
+import searchengine.services.site.SiteService;
+import searchengine.services.indexing.IndexingService;
+import searchengine.services.indexing.IndexingServiceImpl;
+import searchengine.services.statistics.StatisticsService;
+import searchengine.utils.IndexingResponseGenerator;
 
 @RestController
 @RequestMapping("/api")
@@ -46,8 +53,7 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<IndexingToggleResponse> stopIndexing() {
-        if (indexator == null)
-            return ResponseEntity.ok(new IndexingToggleResponse(false, "No indexing is running"));
+        if (indexator == null) return ResponseEntity.ok(IndexingResponseGenerator.failureNoIndexingRunning());
 
         IndexingToggleResponse response = indexator.stopIndexing();
         indexator = null;

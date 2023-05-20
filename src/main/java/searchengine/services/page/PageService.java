@@ -1,11 +1,10 @@
-package searchengine.services;
+package searchengine.services.page;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.repositories.PageRepository;
 
 @Service
 public class PageService {

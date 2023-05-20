@@ -1,15 +1,22 @@
-package searchengine.services;
+package searchengine.services.indexing;
 
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
-import searchengine.dto.indexing.IndexingResponseGenerator;
+import searchengine.utils.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
+import searchengine.services.logging.ApplicationLogger;
+import searchengine.services.index.IndexService;
+import searchengine.services.lemma.LemmaService;
+import searchengine.services.page.PageService;
+import searchengine.services.site.SiteService;
+import searchengine.utils.HtmlWorker;
+import searchengine.utils.Lemmatizator;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -73,7 +80,7 @@ public class IndexingServiceImpl
 
         List<IndexingServiceImpl> tasks = new ArrayList<>();
         siteService.saveIndexingSites().forEach(s -> {
-            IndexingServiceImpl task = new IndexingServiceImpl(s, HtmlService.makeUrlWithSlashEnd(s.getUrl()));
+            IndexingServiceImpl task = new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()));
             tasks.add(task);
             pool.submit(task);
         });
@@ -95,7 +102,7 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse stopIndexing() {
-        if (pool == null) return IndexingResponseGenerator.failureNoIndexingRunning();
+        if (pool == null || pool.isQuiescent()) return IndexingResponseGenerator.failureNoIndexingRunning();
 
         pool.shutdownNow();
         siteService.updateSitesOnIndexingStop();
@@ -105,9 +112,9 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse indexPage(String url) {
-        site = siteService.findSiteByUrl(HtmlService.getBaseUrl(url));
+        site = siteService.findSiteByUrl(HtmlWorker.getBaseUrl(url));
         if (site == null) return IndexingResponseGenerator.failureSiteNotAdded();
-        pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), HtmlService.makeUrlWithSlashEnd(url));
+        pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), HtmlWorker.makeUrlWithSlashEnd(url));
 
         clearTablesBeforeIndexPage();
         savePageInfoAndGetDocument();
@@ -117,7 +124,7 @@ public class IndexingServiceImpl
 
     @Override
     protected IndexingToggleResponse compute() {
-        pageUrl = HtmlService.getUrlWithoutDomainName(site.getUrl(), pageUrl);
+        pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
 
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
             return IndexingResponseGenerator.successResponse();
@@ -132,12 +139,12 @@ public class IndexingServiceImpl
     }
 
     private Document savePageInfoAndGetDocument() {
-        PageResponse pageResponse = HtmlService.getResponse(site.getUrl().concat(pageUrl));
+        PageResponse pageResponse = HtmlWorker.getResponse(site.getUrl().concat(pageUrl));
         if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
         Page page = pageService.savePage(pageResponse, site);
 
-        Document doc = HtmlService.parsePage(pageResponse.getResponse());
+        Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
 
         saveLemmasAndIndexes(page, doc);
 
@@ -163,7 +170,7 @@ public class IndexingServiceImpl
                         && !u.contains("#")
                         && pageService.findByPathAndSiteId(u, site.getId()) == null)
                 .map(u -> {
-                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlService.makeUrlWithSlashEnd(u));
+                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlWorker.makeUrlWithSlashEnd(u));
                     subtask.fork();
                     return subtask;
                 })

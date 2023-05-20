@@ -1,4 +1,6 @@
-package searchengine.dto.indexing;
+package searchengine.utils;
+
+import searchengine.dto.indexing.IndexingToggleResponse;
 
 public class IndexingResponseGenerator {
 

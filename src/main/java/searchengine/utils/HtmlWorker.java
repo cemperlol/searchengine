@@ -1,16 +1,15 @@
-package searchengine.services;
+package searchengine.utils;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import searchengine.dto.page.PageResponse;
+import searchengine.services.logging.ApplicationLogger;
 
 import java.io.IOException;
 
-@Service
-public abstract class HtmlService {
+public class HtmlWorker {
 
     public static PageResponse getResponse(String url) {
         PageResponse pageResponse;
