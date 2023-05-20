@@ -154,6 +154,7 @@ databaseChangeLog:
                   name: path(255)
             indexName: path_index
             tableName: page
+            unique: true
         - createIndex:
             columns:
               - column:
@@ -162,3 +163,13 @@ databaseChangeLog:
                   name: site_id
             indexName: site_lemma_index
             tableName: lemma
+            unique: true
+        - createIndex:
+            columns:
+              - column:
+                  name: page_id
+              - column:
+                  name: lemma_id
+            indexName: lemma_page_index
+            tableName: index
+            unique: true

@@ -3,6 +3,7 @@ package searchengine.services;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.config.Task;
 import org.springframework.stereotype.Service;
 import searchengine.dto.indexing.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
@@ -72,17 +73,18 @@ public class IndexingServiceImpl
 
         List<IndexingServiceImpl> tasks = new ArrayList<>();
         siteService.saveIndexingSites().forEach(s -> {
-            IndexingServiceImpl task = new IndexingServiceImpl(s, s.getUrl().concat("/"));
+            IndexingServiceImpl task = new IndexingServiceImpl(s, HtmlService.makeUrlWithSlashEnd(s.getUrl()));
             tasks.add(task);
             pool.submit(task);
         });
 
-//        notifier.notifyIndexingStarted(IndexingResponseGenerator.successResponse());
-
-        pool.shutdown();
+        CompletableFuture.runAsync(() -> smth(tasks));
 
         return IndexingResponseGenerator.successResponse();
-//        return getTasksResult(tasks);
+    }
+
+    private void smth(List<IndexingServiceImpl> tasks) {
+        System.out.println(getTasksResult(tasks));
     }
 
     @Override
@@ -150,9 +152,12 @@ public class IndexingServiceImpl
 
         return doc.select("a").eachAttr("abs:href")
                 .stream()
-                .filter(u -> sitePattern.matcher(u).find() && !u.contains("#"))
+                .distinct()
+                .filter(u -> sitePattern.matcher(u).find()
+                        && !u.contains("#")
+                        && pageService.findByPathAndSiteId(u, site.getId()) == null)
                 .map(u -> {
-                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlService.makeUrlWithoutSlashEnd(u).concat("/"));
+                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlService.makeUrlWithSlashEnd(u));
                     subtask.fork();
                     return subtask;
                 })
@@ -167,7 +172,8 @@ public class IndexingServiceImpl
 
         IndexingToggleResponse totalResult = results.stream()
                 .filter(IndexingToggleResponse::isResult)
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElse(null);
 
         if (totalResult == null) return IndexingResponseGenerator.successResponse();
 

@@ -9,6 +9,7 @@ import searchengine.model.Index;
 
 import java.util.List;
 
+@Transactional
 public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     @Modifying
