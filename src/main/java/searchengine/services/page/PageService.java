@@ -25,11 +25,19 @@ public class PageService {
         page.setSite(site);
         page.setPath(pageResponse.getPath());
         page.setCode(pageResponse.getStatusCode());
-        page.setContent(pageResponse.getResponseBody());
+        page.setContent(page.getCode() >= 400 ? "Content is unknown" : pageResponse.getResponseBody());
 
         savePage(page);
 
         return page;
+    }
+
+    public int getPageCount(int siteId) {
+        return pageRepository.countPageBySiteId(siteId);
+    }
+
+    public int getTotalPageCount() {
+        return pageRepository.totalCountPage();
     }
 
     public Page findByPathAndSiteId(String path, int siteId) {

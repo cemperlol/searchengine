@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Index;
 
 import java.util.List;
+import java.util.Optional;
 
 @Transactional
 public interface IndexRepository extends CrudRepository<Index, Integer> {
@@ -18,6 +19,9 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
     void deleteIndexByPageId(@Param("pageId") int pageId);
 
     @Query("select i from Index i where i.page.id = :pageId")
-    List<Index> getIndexesByPageId(@Param("pageId") int pageId);
+    List<Index> getByPageId(@Param("pageId") int pageId);
+
+    @Query("select i from Index i where i.lemma.id = :lemmaId")
+    List<Index> getByLemmaId(@Param("lemmaId") int lemmaId);
 }
 

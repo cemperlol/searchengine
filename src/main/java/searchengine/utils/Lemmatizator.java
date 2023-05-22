@@ -17,10 +17,10 @@ public class Lemmatizator {
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
-    public static Map<String, Integer> getLemmas(Document doc) {
-        if (doc == null || russianLuceneMorph == null) return new HashMap<>(); //TODO: add lemmatizator exceptions
+    public static Map<String, Integer> getLemmas(String text) {
+        if (russianLuceneMorph == null) return new HashMap<>(); //TODO: add lemmatizator exceptions
 
-        String text = clearFromHtml(doc);
+        text = makeTextValid(text);
         Matcher matcher = PATTERN.matcher(text);
         Map<String, Integer> lemmas = new HashMap<>();
 
@@ -33,8 +33,12 @@ public class Lemmatizator {
         return lemmas;
     }
 
-    public static String clearFromHtml(Document doc) {
-        return doc.text().replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е").toLowerCase();
+    public static Map<String, Integer> getLemmas(Document doc) {
+        return doc == null ? new HashMap<>() : getLemmas(doc.text());
+    }
+
+    public static String makeTextValid(String text) {
+        return text.replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е").toLowerCase();
     }
 
     private static boolean checkIfServicePart(String wordForm) {

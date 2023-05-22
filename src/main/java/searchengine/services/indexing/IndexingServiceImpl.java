@@ -142,7 +142,9 @@ public class IndexingServiceImpl
         PageResponse pageResponse = HtmlWorker.getResponse(site.getUrl().concat(pageUrl));
         if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
+
         Page page = pageService.savePage(pageResponse, site);
+        if (page.getContent().equals("Content is unknown")) return null;
 
         Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
 

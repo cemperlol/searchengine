@@ -6,8 +6,8 @@ import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 @Service
 public class IndexService {
@@ -29,11 +29,10 @@ public class IndexService {
     }
 
     public List<Index> saveAllIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
-        List<Index> indexes = new ArrayList<>();
+        List<Index> indexes = IntStream.range(0, lemmas.size())
+                .mapToObj(i -> createIndex(page, lemmas.get(i), ranks.get(i)))
+                .toList();
 
-        for(int i = 0; i < lemmas.size(); i++) {
-            indexes.add(createIndex(page, lemmas.get(i), ranks.get(i)));
-        }
         indexRepository.saveAll(indexes);
 
         return indexes;
@@ -48,11 +47,32 @@ public class IndexService {
         return index;
     }
 
-    public List<Lemma> getLemmasByPageId(int pageId) {
-        List<Lemma> lemmas = new ArrayList<>();
-        indexRepository.getIndexesByPageId(pageId).forEach(i -> lemmas.add(i.getLemma()));
+    public List<Index> getByLemmaId(int lemmaId) {
+        return indexRepository.getByLemmaId(lemmaId);
+    }
 
-        return lemmas;
+    public List<Index> getAllByLemmasId(List<Lemma> lemmas) {
+        return lemmas.stream()
+                .map(Lemma::getId)
+                .flatMap(lemmaId -> getByLemmaId(lemmaId).stream())
+                .toList();
+    }
+
+    public List<Index> getByPageId(int pageId) {
+        return indexRepository.getByPageId(pageId);
+    }
+
+    public List<Index> getAllByPagesId(List<Page> pages) {
+        return pages.stream()
+                .map(Page::getId)
+                .flatMap(pageId -> getByPageId(pageId).stream())
+                .toList();
+    }
+
+    public List<Lemma> getLemmasByPageId(int pageId) {
+        return getByPageId(pageId).stream()
+                .map(Index::getLemma)
+                .toList();
     }
 
     public void deleteIndexByPageId(int pageId) {
@@ -61,5 +81,10 @@ public class IndexService {
 
     public void deleteAll() {
         indexRepository.deleteAll();
+    }
+
+    public boolean containsLemma(int lemmaId, Index targetIndex) {
+        return getByLemmaId(lemmaId).stream()
+                .anyMatch(index -> index.getLemma().equals(targetIndex.getLemma()));
     }
 }

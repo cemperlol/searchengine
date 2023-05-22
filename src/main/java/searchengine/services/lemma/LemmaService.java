@@ -9,6 +9,7 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class LemmaService {
@@ -22,6 +23,13 @@ public class LemmaService {
 
     public Lemma getLemmaById(int id) {
         return lemmaRepository.findById(id).orElse(null);
+    }
+
+    public List<Lemma> getAllByLemmaAndSiteId(List<String> lemmaValues, int siteId) {
+        List<Lemma> lemmas = new ArrayList<>();
+        lemmaValues.forEach(v -> lemmas.add(getByLemmaAndSiteId(v, siteId)));
+
+        return lemmas.stream().filter(Objects::nonNull).toList();
     }
 
     public Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
@@ -67,5 +75,10 @@ public class LemmaService {
 
     public void deleteAll() {
         lemmaRepository.deleteAll();
+    }
+
+    public boolean filterTooFrequentLemmasOnSite(Lemma lemma, int pageCount) {
+        if (pageCount < 10) return true;
+        return (float) lemma.getFrequency() / pageCount < 0.25;
     }
 }

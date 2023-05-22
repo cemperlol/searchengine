@@ -3,10 +3,12 @@ package searchengine.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
+import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
+import searchengine.services.search.SearchServiceImpl;
 import searchengine.services.site.SiteService;
 import searchengine.services.indexing.IndexingService;
 import searchengine.services.indexing.IndexingServiceImpl;
@@ -65,6 +67,17 @@ public class ApiController {
         if (indexator == null) indexator = new IndexingServiceImpl(siteService, pageService, lemmaService, indexService);
         IndexingToggleResponse response = indexator.indexPage(url);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponse> search(@RequestParam(name = "query") String query,
+                                                 @RequestParam(name = "site", required = false) String site,
+                                                 @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
+                                                 @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+
+        SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
+        SearchResponse response = search.siteSearch(query, site, offset, limit);
         return ResponseEntity.ok(response);
     }
 }
