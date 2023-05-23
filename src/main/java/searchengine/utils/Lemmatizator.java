@@ -38,7 +38,7 @@ public class Lemmatizator {
     }
 
     public static String makeTextValid(String text) {
-        return text.replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е").toLowerCase();
+        return text.replaceAll("[^а-яА-ЯёЁ.\\-\\s]+", " ").replaceAll("ёЁ", "еЕ").toLowerCase();
     }
 
     private static boolean checkIfServicePart(String wordForm) {

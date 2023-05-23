@@ -51,11 +51,21 @@ public class IndexService {
         return indexRepository.getByLemmaId(lemmaId);
     }
 
+    public List<Page> getPagesByLemmaId(int lemmaId) {
+        return indexRepository.getByLemmaId(lemmaId).stream()
+                .map(Index::getPage)
+                .toList();
+    }
+
     public List<Index> getAllByLemmasId(List<Lemma> lemmas) {
         return lemmas.stream()
                 .map(Lemma::getId)
                 .flatMap(lemmaId -> getByLemmaId(lemmaId).stream())
                 .toList();
+    }
+
+    public Index getByLemmaAndPageId(int lemmaId, int pageId) {
+        return indexRepository.getByLemmaAndPageId(lemmaId, pageId).orElse(null);
     }
 
     public List<Index> getByPageId(int pageId) {
@@ -83,8 +93,7 @@ public class IndexService {
         indexRepository.deleteAll();
     }
 
-    public boolean containsLemma(int lemmaId, Index targetIndex) {
-        return getByLemmaId(lemmaId).stream()
-                .anyMatch(index -> index.getLemma().equals(targetIndex.getLemma()));
+    public boolean pageContainsLemma(int lemmaId, int pageId) {
+        return getByLemmaAndPageId(lemmaId, pageId) != null;
     }
 }

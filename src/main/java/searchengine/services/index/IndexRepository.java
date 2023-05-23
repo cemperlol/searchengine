@@ -23,5 +23,8 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     @Query("select i from Index i where i.lemma.id = :lemmaId")
     List<Index> getByLemmaId(@Param("lemmaId") int lemmaId);
+
+    @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
+    Optional<Index> getByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
 }
 

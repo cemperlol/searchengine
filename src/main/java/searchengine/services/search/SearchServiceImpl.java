@@ -8,6 +8,7 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
+import searchengine.utils.HtmlWorker;
 import searchengine.utils.Lemmatizator;
 import searchengine.utils.SearchResponseGenerator;
 
@@ -32,12 +33,6 @@ public class SearchServiceImpl implements SearchService {
         this.indexService = indexService;
     }
 
-    /*
-    todo: order: lemma, index, (site), page
-        count pages, count relevance for each result, get snippets
-        sort and return results
-    */
-
     @Override
     public SearchResponse siteSearch(String query, String siteUrl, int offset, int limit) {
         Site site = siteService.findSiteByUrl(siteUrl);
@@ -50,9 +45,10 @@ public class SearchServiceImpl implements SearchService {
         if (pages.isEmpty()) return SearchResponseGenerator.noResults();
 
         Map<Page, List<Index>> pageQueryIndexes = new HashMap<>();
+        pageCount = pages.size();
         pages.forEach(page -> pageQueryIndexes.put(page, indexService.getAllByLemmasId(lemmas)));
 
-        return SearchResponseGenerator.resultsFound(pageCount, searchResults(pageQueryIndexes));
+        return SearchResponseGenerator.resultsFound(pageCount, searchResults(lemmas, pageQueryIndexes));
     }
 
     @Override
@@ -63,27 +59,32 @@ public class SearchServiceImpl implements SearchService {
     private List<Lemma> getAscendingLemmasFromQuery(String query, int siteId, int pageCount) {
         return Lemmatizator.getLemmas(query).keySet().stream()
                 .map(lemmaValue -> lemmaService.getByLemmaAndSiteId(lemmaValue, siteId))
+                .filter(Objects::nonNull)
                 .filter(lemma -> lemmaService.filterTooFrequentLemmasOnSite(lemma, pageCount))
                 .sorted(Comparator.comparingInt(Lemma::getFrequency))
                 .toList();
     }
 
     private List<Page> getPagesWithFullQuery(List<Lemma> lemmas, int siteId) {
-        return indexService.getByLemmaId(lemmas.get(0).getId()).stream()
-                .filter(index -> lemmas.stream().allMatch(lemma -> indexService.containsLemma(lemma.getId(), index)))
-                .map(Index::getPage)
+        if (lemmas.isEmpty()) return new ArrayList<>();
+
+        return indexService.getPagesByLemmaId(lemmas.get(0).getId()).stream()
+                .filter(page -> lemmas.stream()
+                        .allMatch(lemma -> indexService.pageContainsLemma(lemma.getId(), page.getId())))
                 .filter(page -> page.getSite().getId() == siteId)
+                .distinct()
                 .toList();
     }
 
-    private SearchServiceResult[] searchResults(Map<Page, List<Index>> pageQueryIndexes) {
+    private SearchServiceResult[] searchResults(List<Lemma> lemmas, Map<Page, List<Index>> pageQueryIndexes) {
         List<SearchServiceResult> results = pageQueryIndexes.keySet().stream()
                 .map(page -> {
                     SearchServiceResult result = new SearchServiceResult();
-                    result.setSiteUrl(page.getSite().getUrl());
+                    result.setSite(page.getSite().getUrl());
                     result.setSiteName(page.getSite().getName());
-                    result.setPageUrl(page.getPath());
-                    result.setSnippet("It exists, believe me");
+                    result.setUri(page.getPath());
+                    result.setTitle(HtmlWorker.getPageTitle(page.getContent()));
+                    result.setSnippet(HtmlWorker.getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
                     result.setRelevance(0);
 
                     return result;

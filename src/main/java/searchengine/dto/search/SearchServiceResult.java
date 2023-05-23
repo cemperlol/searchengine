@@ -5,11 +5,13 @@ import lombok.Data;
 @Data
 public class SearchServiceResult {
 
-    private String siteUrl;
+    private String site;
 
     private String siteName;
 
-    private String pageUrl;
+    private String uri;
+
+    private String title;
 
     private String snippet;
 
