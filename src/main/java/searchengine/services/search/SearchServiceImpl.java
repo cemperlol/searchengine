@@ -13,9 +13,7 @@ import searchengine.utils.HtmlWorker;
 import searchengine.utils.Lemmatizator;
 import searchengine.utils.SearchResponseGenerator;
 
-import java.lang.reflect.Array;
 import java.util.*;
-import java.util.stream.Stream;
 
 @Service
 public class SearchServiceImpl implements SearchService {
@@ -56,7 +54,13 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchResponse globalSearch(String query) {
-        List<SearchResponse> sitesResponses = siteService.getSites().stream()
+        List<Site> sites = siteService.findAllSites().stream()
+                .filter(site -> site.getStatus() != SiteStatus.INDEXING)
+                .toList();
+
+        if (sites.isEmpty()) return SearchResponseGenerator.noSitesIndexed();
+
+        List<SearchResponse> sitesResponses = sites.stream()
                 .map(site -> siteSearch(query, site.getUrl()))
                 .filter(SearchResponse::isResult)
                 .toList();
