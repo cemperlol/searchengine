@@ -151,7 +151,7 @@ public class HtmlWorker {
 
         if (!allocatedText.toString().contains("<b>")) {
             allocatedText.replace(0, allocatedText.length(), highlightClosestToLemma(allocatedText, rarestLemma));
-            start = allocatedText.toString().indexOf(rarestLemma.substring(0, rarestLemma.length() / 2));
+            start = allocatedText.toString().indexOf(rarestLemma.substring(0, rarestLemma.length() / 2 + 1));
         } else {
             start = allocatedText.toString().indexOf(rarestLemma);
         }

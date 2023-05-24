@@ -77,7 +77,7 @@ public class ApiController {
                                                  @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
 
         SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
-        SearchResponse response = search.siteSearch(query, site, offset, limit);
+        SearchResponse response = search.siteSearch(query, site);
         return ResponseEntity.ok(response);
     }
 }

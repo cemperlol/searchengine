@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public class Lemmatizator {
 
     private static final Set<String> SERVICE_PARTS = Set.of("МЕЖД", "СОЮЗ", "ПРЕДЛ");
-    private static final Pattern PATTERN = Pattern.compile("\\b[а-яё]+([-.][а-яё]+)*\\b");
+    private static final Pattern PATTERN = Pattern.compile("[а-яё]+");
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
@@ -38,7 +38,7 @@ public class Lemmatizator {
     }
 
     public static String makeTextValid(String text) {
-        return text.replaceAll("[^а-яА-ЯёЁ.\\-\\s]+", " ").replaceAll("ёЁ", "еЕ").toLowerCase();
+        return text.toLowerCase().replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е");
     }
 
     private static boolean checkIfServicePart(String wordForm) {

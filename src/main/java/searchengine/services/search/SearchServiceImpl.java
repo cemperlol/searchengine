@@ -1,5 +1,6 @@
 package searchengine.services.search;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
@@ -12,7 +13,9 @@ import searchengine.utils.HtmlWorker;
 import searchengine.utils.Lemmatizator;
 import searchengine.utils.SearchResponseGenerator;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 public class SearchServiceImpl implements SearchService {
@@ -34,7 +37,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public SearchResponse siteSearch(String query, String siteUrl, int offset, int limit) {
+    public SearchResponse siteSearch(String query, String siteUrl) {
         Site site = siteService.findSiteByUrl(siteUrl);
         if (site == null || site.getStatus() == SiteStatus.INDEXING) return SearchResponseGenerator.siteNotIndexed();
         int pageCount = pageService.getPageCount(site.getId());
@@ -52,8 +55,15 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public SearchResponse globalSearch(String query, int offset, int limit) {
-        return null;
+    public SearchResponse globalSearch(String query) {
+        List<SearchResponse> sitesResponses = siteService.getSites().stream()
+                .map(site -> siteSearch(query, site.getUrl()))
+                .filter(SearchResponse::isResult)
+                .toList();
+
+        if (sitesResponses.isEmpty()) return SearchResponseGenerator.noResults();
+
+        return SearchResponseGenerator.globalSearchResult(sitesResponses);
     }
 
     private List<Lemma> getAscendingLemmasFromQuery(String query, int siteId, int pageCount) {

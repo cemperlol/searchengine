@@ -93,16 +93,16 @@ public class IndexingServiceImpl
     private void processIndexingResult(IndexingServiceImpl task) {
         IndexingToggleResponse result = getTasksResult(Stream.of(task).toList());
 
-        if (result.isSuccess()) {
-            siteService.saveSucceedIndexSite(task.site);
+        if (result.isResult()) {
+            siteService.saveSucceedIndexSite(task.site.getId());
         } else {
-            siteService.saveFailedIndexSite(task.site, result.getError());
+            siteService.saveFailedIndexSite(task.site.getId(), result.getError());
         }
     }
 
     @Override
     public IndexingToggleResponse stopIndexing() {
-        if (pool == null || pool.isQuiescent()) return IndexingResponseGenerator.failureNoIndexingRunning();
+        if (pool == null) return IndexingResponseGenerator.failureNoIndexingRunning();
 
         pool.shutdownNow();
         siteService.updateSitesOnIndexingStop();
@@ -186,7 +186,7 @@ public class IndexingServiceImpl
         tasks.forEach(t -> results.add(t.join()));
 
         IndexingToggleResponse totalResult = results.stream()
-                .filter(IndexingToggleResponse::isSuccess)
+                .filter(IndexingToggleResponse::isResult)
                 .findFirst()
                 .orElse(null);
 
