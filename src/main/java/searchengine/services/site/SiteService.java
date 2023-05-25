@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.utils.html.HtmlWorker;
+import searchengine.utils.workers.HtmlWorker;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -83,8 +83,7 @@ public class SiteService {
     }
 
     public Site findSiteByUrl(String url) {
-        Site site = siteRepository.findSiteByUrl(url.replace("://www.", "://")).orElse(null);
-        return site;
+        return siteRepository.findSiteByUrl(url.replace("://www.", "://")).orElse(null);
     }
 
     public Site findSiteById(int id) {

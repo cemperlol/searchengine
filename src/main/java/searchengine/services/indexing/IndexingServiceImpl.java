@@ -14,7 +14,7 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
-import searchengine.utils.html.HtmlWorker;
+import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.handlers.IndexingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
 
@@ -72,19 +72,21 @@ public class IndexingServiceImpl
     @Override
     public IndexingToggleResponse startIndexing() {
         if (pool != null && !pool.isQuiescent()) return IndexingResponseGenerator.failureIndexingAlreadyStarted();
-        clearTablesBeforeStartIndexing();
         pool = new ForkJoinPool();
 
-        List<IndexingServiceImpl> tasks = new ArrayList<>();
-        siteService.saveIndexingSites().forEach(s -> {
-                    tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl())));
-                }
-
-        );
-
-        tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
+        CompletableFuture.runAsync(this::prepareIndexing);
 
         return IndexingResponseGenerator.successResponse();
+    }
+
+    private void prepareIndexing() {
+        clearTablesBeforeStartIndexing();
+
+        List<IndexingServiceImpl> tasks = new ArrayList<>();
+        siteService.saveIndexingSites().forEach(s ->
+                    tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()))));
+
+        tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
     }
 
     private void processIndexingResult(IndexingServiceImpl task) {
@@ -135,7 +137,7 @@ public class IndexingServiceImpl
         return new IndexingTaskResultHandler().HandleTasksResult(new ArrayList<>(createSubtasks(doc)));
     }
 
-    private Document savePageInfoAndGetDocument() {
+    protected Document savePageInfoAndGetDocument() {
         PageResponse pageResponse = HtmlWorker.getResponse(site.getUrl().concat(pageUrl));
         if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
@@ -150,7 +152,7 @@ public class IndexingServiceImpl
         return doc;
     }
 
-    private void saveLemmasAndIndexes(Page page, Document doc) {
+    protected void saveLemmasAndIndexes(Page page, Document doc) {
         Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
 
         List<Lemma> lemmas = lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site);

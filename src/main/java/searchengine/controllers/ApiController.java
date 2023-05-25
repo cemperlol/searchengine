@@ -14,6 +14,7 @@ import searchengine.services.indexing.IndexingService;
 import searchengine.services.indexing.IndexingServiceImpl;
 import searchengine.services.statistics.StatisticsService;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
 @RestController
 @RequestMapping("/api")
@@ -75,6 +76,8 @@ public class ApiController {
                                                  @RequestParam(name = "site", required = false) String site,
                                                  @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,
                                                  @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
+
+        if (query.isBlank()) return ResponseEntity.ok(SearchResponseGenerator.emptyQuery());
 
         SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
         SearchResponse response = site == null ? search.globalSearch(query) : search.siteSearch(query, site);

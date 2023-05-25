@@ -8,7 +8,9 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
-import searchengine.utils.html.HtmlWorker;
+import searchengine.utils.workers.HtmlWorker;
+import searchengine.utils.workers.RelevanceWorker;
+import searchengine.utils.workers.SnippetWorker;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
@@ -24,6 +26,8 @@ public class SearchServiceImpl implements SearchService {
     private final LemmaService lemmaService;
 
     private final IndexService indexService;
+
+    private float absRelevance = -1.0f;
 
     public SearchServiceImpl(SiteService siteService, PageService pageService,
                              LemmaService lemmaService, IndexService indexService) {
@@ -44,11 +48,12 @@ public class SearchServiceImpl implements SearchService {
 
         if (pages.isEmpty()) return SearchResponseGenerator.noResults();
 
-        Map<Page, List<Index>> pageQueryIndexes = new HashMap<>();
+        Map<Page, List<Index>> pageAndIndexes = new HashMap<>();
         pageCount = pages.size();
-        pages.forEach(page -> pageQueryIndexes.put(page, indexService.getAllByLemmasId(lemmas)));
+        pages.forEach(page -> pageAndIndexes.put(page, indexService.getByPageId(page.getId())));
+        absRelevance = Math.max(absRelevance, RelevanceWorker.getAbsRelevance(pageAndIndexes.values()));
 
-        return SearchResponseGenerator.resultsFound(pageCount, searchResults(lemmas, pageQueryIndexes));
+        return SearchResponseGenerator.resultsFound(pageCount, searchResults(lemmas, pageAndIndexes, absRelevance));
     }
 
     @Override
@@ -66,7 +71,22 @@ public class SearchServiceImpl implements SearchService {
 
         if (sitesResponses.isEmpty()) return SearchResponseGenerator.noResults();
 
-        return SearchResponseGenerator.globalSearchResult(sitesResponses);
+        return SearchResponseGenerator
+                .globalSearchResult(calculateGlobalSearchResponsesRelevance(sitesResponses));
+    }
+
+    private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
+        sitesResponses.forEach(response -> {
+            Arrays.stream(response.getData()).forEach(result -> {
+                Page page = pageService.findByPathAndSiteId(result.getUri(),
+                        siteService.findSiteByUrl(result.getSite()).getId());
+
+                result.setRelevance(RelevanceWorker
+                        .getRelRelevance(indexService.getByPageId(page.getId()), absRelevance));
+            });
+        });
+
+        return sitesResponses;
     }
 
     private List<Lemma> getAscendingLemmasFromQuery(String query, int siteId, int pageCount) {
@@ -89,20 +109,22 @@ public class SearchServiceImpl implements SearchService {
                 .toList();
     }
 
-    private SearchServiceResult[] searchResults(List<Lemma> lemmas, Map<Page, List<Index>> pageQueryIndexes) {
-        List<SearchServiceResult> results = pageQueryIndexes.keySet().stream()
+    private SearchServiceResult[] searchResults(List<Lemma> lemmas,
+                                                Map<Page, List<Index>> pageAndIndexes,
+                                                float absRelevance) {
+        List<SearchServiceResult> results = pageAndIndexes.keySet().stream()
                 .map(page -> {
                     SearchServiceResult result = new SearchServiceResult();
                     result.setSite(page.getSite().getUrl());
                     result.setSiteName(page.getSite().getName());
                     result.setUri(page.getPath());
                     result.setTitle(HtmlWorker.getPageTitle(page.getContent()));
-                    result.setSnippet(HtmlWorker.getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
-                    result.setRelevance(0);
+                    result.setSnippet(SnippetWorker.getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
+                    result.setRelevance(RelevanceWorker.getRelRelevance(pageAndIndexes.get(page), absRelevance));
 
                     return result;
                 })
-                .sorted(Comparator.comparingDouble(SearchServiceResult::getRelevance))
+                .sorted(Comparator.comparingDouble(SearchServiceResult::getRelevance).reversed())
                 .toList();
 
         return results.toArray(new SearchServiceResult[0]);
