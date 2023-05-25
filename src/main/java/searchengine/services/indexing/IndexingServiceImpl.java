@@ -2,9 +2,8 @@ package searchengine.services.indexing;
 
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
-import searchengine.utils.IndexingResponseGenerator;
+import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
@@ -15,20 +14,18 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
-import searchengine.utils.HtmlWorker;
-import searchengine.utils.Lemmatizator;
+import searchengine.utils.html.HtmlWorker;
+import searchengine.utils.handlers.IndexingTaskResultHandler;
+import searchengine.utils.lemmas.Lemmatizator;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @Service
-@ComponentScan
 @NoArgsConstructor
 public class IndexingServiceImpl
-        extends RecursiveTask<IndexingToggleResponse>
-        implements IndexingService {
+        extends AbstractIndexingService {
 
     private static SiteService siteService;
 
@@ -80,10 +77,10 @@ public class IndexingServiceImpl
 
         List<IndexingServiceImpl> tasks = new ArrayList<>();
         siteService.saveIndexingSites().forEach(s -> {
-            IndexingServiceImpl task = new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()));
-            tasks.add(task);
-            pool.submit(task);
-        });
+                    tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl())));
+                }
+
+        );
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
 
@@ -91,7 +88,7 @@ public class IndexingServiceImpl
     }
 
     private void processIndexingResult(IndexingServiceImpl task) {
-        IndexingToggleResponse result = getTasksResult(Stream.of(task).toList());
+        IndexingToggleResponse result = pool.invoke(task);
 
         if (result.isResult()) {
             siteService.saveSucceedIndexSite(task.site.getId());
@@ -123,7 +120,7 @@ public class IndexingServiceImpl
     }
 
     @Override
-    protected IndexingToggleResponse compute() {
+    public IndexingToggleResponse compute() {
         pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
 
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
@@ -135,7 +132,7 @@ public class IndexingServiceImpl
 
         site = siteService.updateSiteStatusTime(site.getId());
 
-        return getTasksResult(createSubtasks(doc));
+        return new IndexingTaskResultHandler().HandleTasksResult(new ArrayList<>(createSubtasks(doc)));
     }
 
     private Document savePageInfoAndGetDocument() {
@@ -144,7 +141,7 @@ public class IndexingServiceImpl
         pageResponse.setPath(pageUrl);
 
         Page page = pageService.savePage(pageResponse, site);
-        if (page.getContent().equals("Content is unknown")) return null;
+        if (page == null || page.getContent().equals("Content is unknown")) return null;
 
         Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
 
@@ -168,31 +165,11 @@ public class IndexingServiceImpl
         return doc.select("a").eachAttr("abs:href")
                 .stream()
                 .distinct()
-                .filter(u -> sitePattern.matcher(u).find()
-                        && !u.contains("#")
+                .filter(u -> sitePattern.matcher(HtmlWorker.makeUrlWithoutWWW(u)).find()
+                        && !u.contains("#") && !u.contains("?")
                         && pageService.findByPathAndSiteId(u, site.getId()) == null)
-                .map(u -> {
-                    IndexingServiceImpl subtask = new IndexingServiceImpl(site, HtmlWorker.makeUrlWithSlashEnd(u));
-                    subtask.fork();
-                    return subtask;
-                })
+                .map(u -> new IndexingServiceImpl(site, HtmlWorker.makeUrlWithSlashEnd(u)))
                 .toList();
-    }
-
-
-
-    private IndexingToggleResponse getTasksResult(List<IndexingServiceImpl> tasks) {
-        List<IndexingToggleResponse> results = new ArrayList<>();
-        tasks.forEach(t -> results.add(t.join()));
-
-        IndexingToggleResponse totalResult = results.stream()
-                .filter(IndexingToggleResponse::isResult)
-                .findFirst()
-                .orElse(null);
-
-        if (totalResult == null) return IndexingResponseGenerator.successResponse();
-
-        return IndexingResponseGenerator.createFailureResponse(totalResult.getError());
     }
 
     protected void executeDelay() {

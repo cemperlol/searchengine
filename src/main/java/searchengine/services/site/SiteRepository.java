@@ -10,7 +10,6 @@ import searchengine.model.SiteStatus;
 
 import java.util.Optional;
 
-@Transactional
 public interface SiteRepository extends CrudRepository<Site, Integer> {
 
     @Modifying

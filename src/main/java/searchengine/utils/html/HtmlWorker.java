@@ -1,9 +1,8 @@
-package searchengine.utils;
+package searchengine.utils.html;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.TextNode;
 import org.springframework.web.client.HttpStatusCodeException;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
@@ -12,10 +11,7 @@ import searchengine.services.logging.ApplicationLogger;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class HtmlWorker {
 
@@ -71,6 +67,10 @@ public class HtmlWorker {
         }
 
         return doc;
+    }
+
+    public static String makeUrlWithoutWWW(String url) {
+        return url.replace("://www.", "://");
     }
 
     public static String makeUrlWithoutSlashEnd(String url) {

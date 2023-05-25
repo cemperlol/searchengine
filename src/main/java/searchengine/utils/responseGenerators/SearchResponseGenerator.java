@@ -1,4 +1,4 @@
-package searchengine.utils;
+package searchengine.utils.responseGenerators;
 
 import org.apache.commons.lang3.ArrayUtils;
 import searchengine.dto.search.SearchResponse;

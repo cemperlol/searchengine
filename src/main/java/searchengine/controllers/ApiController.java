@@ -13,7 +13,7 @@ import searchengine.services.site.SiteService;
 import searchengine.services.indexing.IndexingService;
 import searchengine.services.indexing.IndexingServiceImpl;
 import searchengine.services.statistics.StatisticsService;
-import searchengine.utils.IndexingResponseGenerator;
+import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 
 @RestController
 @RequestMapping("/api")
@@ -77,7 +77,8 @@ public class ApiController {
                                                  @RequestParam(name = "limit", required = false, defaultValue = "20") int limit) {
 
         SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
-        SearchResponse response = search.siteSearch(query, site);
+        SearchResponse response = site == null ? search.globalSearch(query) : search.siteSearch(query, site);
+
         return ResponseEntity.ok(response);
     }
 }

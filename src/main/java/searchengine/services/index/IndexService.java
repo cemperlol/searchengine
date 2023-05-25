@@ -20,22 +20,26 @@ public class IndexService {
     }
     
     public Index saveIndex(Page page, Lemma lemma, int rank) {
-        Index index = new Index();
-        index.setPage(page);
-        index.setLemma(lemma);
-        index.setRank((float) rank);
+        Index index = indexRepository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
 
-        return indexRepository.save(index);
+        if (index == null) {
+            index = new Index();
+            index.setPage(page);
+            index.setLemma(lemma);
+            index.setRank((float) rank);
+
+            indexRepository.save(index);
+        } else {
+            indexRepository.updateIndexRank(index.getRank() + rank, index.getId());
+        }
+
+        return index;
     }
 
     public List<Index> saveAllIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
-        List<Index> indexes = IntStream.range(0, lemmas.size())
-                .mapToObj(i -> createIndex(page, lemmas.get(i), ranks.get(i)))
+        return IntStream.range(0, lemmas.size())
+                .mapToObj(i -> saveIndex(page, lemmas.get(i), ranks.get(i)))
                 .toList();
-
-        indexRepository.saveAll(indexes);
-
-        return indexes;
     }
 
     private Index createIndex(Page page, Lemma lemma, int rank) {

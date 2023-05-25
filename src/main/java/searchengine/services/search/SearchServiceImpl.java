@@ -1,6 +1,5 @@
 package searchengine.services.search;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
@@ -9,9 +8,9 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
-import searchengine.utils.HtmlWorker;
-import searchengine.utils.Lemmatizator;
-import searchengine.utils.SearchResponseGenerator;
+import searchengine.utils.html.HtmlWorker;
+import searchengine.utils.lemmas.Lemmatizator;
+import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
 import java.util.*;
 

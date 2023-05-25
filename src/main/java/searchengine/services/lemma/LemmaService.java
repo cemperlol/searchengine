@@ -36,31 +36,23 @@ public class LemmaService {
         return  lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
-    @Transactional
     public List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {
-        List<Lemma> lemmas = new ArrayList<>();
-
-        lemmaValues.forEach(lemmaValue -> {
-            lemmas.add(createLemma(lemmaValue, site));
-        });
-
-        lemmaRepository.saveAll(lemmas);
-        return lemmas;
+        return lemmaValues.stream()
+                .map(lemmaValue -> saveLemma(lemmaValue, site))
+                .toList();
     }
 
     public Lemma saveLemma(String lemmaValue, Site site) {
-        return lemmaRepository.save(createLemma(lemmaValue, site));
-    }
-
-    private Lemma createLemma(String lemmaValue, Site site) {
         Lemma lemma = getByLemmaAndSiteId(lemmaValue, site.getId());
         if (lemma == null) {
             lemma = new Lemma();
             lemma.setLemma(lemmaValue);
             lemma.setSite(site);
             lemma.setFrequency(1);
+
+            lemmaRepository.save(lemma);
         } else {
-            lemma.setFrequency(lemma.getFrequency() + 1);
+            lemmaRepository.updateLemmaFrequencyById(lemma.getId(), lemma.getFrequency() + 1);
         }
 
         return lemma;

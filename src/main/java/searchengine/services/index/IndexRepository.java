@@ -10,13 +10,17 @@ import searchengine.model.Index;
 import java.util.List;
 import java.util.Optional;
 
-@Transactional
 public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     @Modifying
     @Transactional
     @Query("delete from Index i where i.page.id = :pageId")
     void deleteIndexByPageId(@Param("pageId") int pageId);
+
+    @Modifying
+    @Transactional
+    @Query("update Index i set i.rank = :rank where i.id = :id")
+    void updateIndexRank(@Param("rank") float rank, @Param("id") int id);
 
     @Query("select i from Index i where i.page.id = :pageId")
     List<Index> getByPageId(@Param("pageId") int pageId);

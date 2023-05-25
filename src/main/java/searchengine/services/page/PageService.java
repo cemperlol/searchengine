@@ -21,6 +21,7 @@ public class PageService {
     }
 
     public Page savePage(PageResponse pageResponse, Site site) {
+        if (findByPathAndSiteId( pageResponse.getPath(), site.getId()) != null) return null;
         Page page = new Page();
         page.setSite(site);
         page.setPath(pageResponse.getPath());

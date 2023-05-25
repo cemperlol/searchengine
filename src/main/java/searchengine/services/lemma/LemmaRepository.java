@@ -9,7 +9,6 @@ import searchengine.model.Lemma;
 
 import java.util.Optional;
 
-@Transactional
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     @Query("select l from Lemma l where l.lemma = :lemmaValue and l.site.id = :siteId")

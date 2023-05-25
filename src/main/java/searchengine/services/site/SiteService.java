@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.utils.HtmlWorker;
+import searchengine.utils.html.HtmlWorker;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -40,10 +40,7 @@ public class SiteService {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HtmlWorker.makeUrlWithoutSlashEnd(
-                configSite.getUrl()
-                        .replace("://www.", "://")
-        ));
+        site.setUrl(HtmlWorker.makeUrlWithoutSlashEnd(HtmlWorker.makeUrlWithoutWWW(configSite.getUrl())));
         site.setName(configSite.getName());
 
         saveSite(site);

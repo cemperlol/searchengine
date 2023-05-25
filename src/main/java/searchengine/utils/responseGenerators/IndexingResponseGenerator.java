@@ -1,4 +1,4 @@
-package searchengine.utils;
+package searchengine.utils.responseGenerators;
 
 import searchengine.dto.indexing.IndexingToggleResponse;
 
@@ -17,7 +17,7 @@ public class IndexingResponseGenerator {
     }
 
     public static IndexingToggleResponse failurePageUnavailable(String fullUrl) {
-        return createFailureResponse("Failed to index site, " + fullUrl + " unavailable");
+        return createFailureResponse("Failed to index page, " + fullUrl + " unavailable");
     }
 
     public static IndexingToggleResponse failureNoIndexingRunning() {
@@ -26,5 +26,13 @@ public class IndexingResponseGenerator {
 
     public static IndexingToggleResponse failureIndexingAlreadyStarted() {
         return createFailureResponse("Indexing already started");
+    }
+
+    public static IndexingToggleResponse failedToCompleteIndexingTasks() {
+        return createFailureResponse("Failed to complete indexing tasks");
+    }
+
+    public static IndexingToggleResponse failedToGetIndexingTasksResult() {
+        return createFailureResponse("Failed to get indexing tasks result");
     }
 }
