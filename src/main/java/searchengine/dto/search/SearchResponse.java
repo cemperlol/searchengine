@@ -18,6 +18,12 @@ public class SearchResponse {
         this.data = data;
     }
 
+    public SearchResponse(SearchResponse response) {
+        this.result = response.result;
+        this.count = response.count;
+        this.data = response.data;
+    }
+
     private boolean result;
 
     private String error = "no error";
