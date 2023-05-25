@@ -3,23 +3,26 @@ package searchengine.services.indexing;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
-import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.services.logging.ApplicationLogger;
 import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
+import searchengine.services.logging.ApplicationLogger;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
-import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.handlers.IndexingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
+import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.workers.HtmlWorker;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import java.util.regex.Pattern;
 
 @Service
@@ -84,7 +87,7 @@ public class IndexingServiceImpl
 
         List<IndexingServiceImpl> tasks = new ArrayList<>();
         siteService.saveIndexingSites().forEach(s ->
-                    tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()))));
+                tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()))));
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
     }

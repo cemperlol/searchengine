@@ -5,7 +5,7 @@ import searchengine.dto.indexing.IndexingToggleResponse;
 import java.util.concurrent.RecursiveTask;
 
 public abstract class AbstractIndexingService extends RecursiveTask<IndexingToggleResponse>
-        implements IndexingService{
+        implements IndexingService {
 
     @Override
     public abstract IndexingToggleResponse startIndexing();

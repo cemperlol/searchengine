@@ -6,7 +6,9 @@ import org.jsoup.nodes.Document;
 import searchengine.services.logging.ApplicationLogger;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

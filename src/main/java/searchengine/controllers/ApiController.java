@@ -6,13 +6,14 @@ import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.index.IndexService;
+import searchengine.services.indexing.IndexingService;
+import searchengine.services.indexing.IndexingServiceImpl;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.search.SearchServiceImpl;
 import searchengine.services.site.SiteService;
-import searchengine.services.indexing.IndexingService;
-import searchengine.services.indexing.IndexingServiceImpl;
 import searchengine.services.statistics.StatisticsService;
+import searchengine.services.statistics.StatisticsServiceImpl;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
@@ -32,9 +33,9 @@ public class ApiController {
 
     private IndexingService indexator;
 
-    public ApiController(StatisticsService statisticsService, SiteService siteService, PageService pageService,
+    public ApiController(SiteService siteService, PageService pageService,
                          LemmaService lemmaService, IndexService indexService) {
-        this.statisticsService = statisticsService;
+        this.statisticsService = new StatisticsServiceImpl(siteService, pageService, lemmaService);
         this.siteService = siteService;
         this.pageService = pageService;
         this.lemmaService = lemmaService;
@@ -65,7 +66,8 @@ public class ApiController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingToggleResponse> indexPage(@RequestParam String url) {
-        if (indexator == null) indexator = new IndexingServiceImpl(siteService, pageService, lemmaService, indexService);
+        if (indexator == null)
+            indexator = new IndexingServiceImpl(siteService, pageService, lemmaService, indexService);
         IndexingToggleResponse response = indexator.indexPage(url);
 
         return ResponseEntity.ok(response);

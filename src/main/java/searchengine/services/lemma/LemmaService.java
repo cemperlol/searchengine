@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,6 +20,10 @@ public class LemmaService {
         this.lemmaRepository = lemmaRepository;
     }
 
+    public int getLemmaCountBySiteId(int siteId) {
+        return lemmaRepository.countLemmasBySiteId(siteId);
+    }
+
     public Lemma getLemmaById(int id) {
         return lemmaRepository.findById(id).orElse(null);
     }
@@ -33,7 +36,7 @@ public class LemmaService {
     }
 
     public Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
-        return  lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
+        return lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
     public List<Lemma> saveAllLemmas(Collection<String> lemmaValues, Site site) {

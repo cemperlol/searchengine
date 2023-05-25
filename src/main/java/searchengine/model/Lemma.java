@@ -7,7 +7,8 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "lemma")
-@Getter @Setter
+@Getter
+@Setter
 public class Lemma {
 
     @Id

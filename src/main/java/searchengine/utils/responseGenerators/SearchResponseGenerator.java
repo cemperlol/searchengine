@@ -5,7 +5,6 @@ import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 public class SearchResponseGenerator {

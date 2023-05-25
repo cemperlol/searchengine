@@ -8,11 +8,11 @@ import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
 import searchengine.services.site.SiteService;
+import searchengine.utils.lemmas.Lemmatizator;
+import searchengine.utils.responseGenerators.SearchResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.RelevanceWorker;
 import searchengine.utils.workers.SnippetWorker;
-import searchengine.utils.lemmas.Lemmatizator;
-import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
 import java.util.*;
 

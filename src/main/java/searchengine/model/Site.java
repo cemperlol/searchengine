@@ -10,7 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table
-@Getter @Setter
+@Getter
+@Setter
 public class Site {
 
     @Id

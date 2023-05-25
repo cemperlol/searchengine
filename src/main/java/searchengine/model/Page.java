@@ -7,7 +7,8 @@ import javax.persistence.*;
 
 @Entity
 @Table
-@Getter @Setter
+@Getter
+@Setter
 public class Page {
 
     @Id

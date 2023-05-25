@@ -18,7 +18,7 @@ public class IndexService {
     public IndexService(IndexRepository indexRepository) {
         this.indexRepository = indexRepository;
     }
-    
+
     public Index saveIndex(Page page, Lemma lemma, int rank) {
         Index index = indexRepository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
 
