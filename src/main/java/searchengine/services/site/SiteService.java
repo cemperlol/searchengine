@@ -58,6 +58,15 @@ public class SiteService {
         return updateSiteLastError(siteId, errorMsg);
     }
 
+    public Site saveIncorrectShutdownSite(Site site) {
+        if (!site.getStatus().equals(SiteStatus.INDEXING)) return site;
+
+        siteRepository.updateSiteStatus(SiteStatus.FAILED, site.getId());
+        siteRepository.updateSiteLastError("Application was shut down while indexing", site.getId());
+
+        return siteRepository.findById(site.getId()).orElse(null);
+    }
+
     public Site updateSiteStatusTime(int id) {
         siteRepository.updateSiteStatusTime(id);
         return siteRepository.findById(id).orElse(null);

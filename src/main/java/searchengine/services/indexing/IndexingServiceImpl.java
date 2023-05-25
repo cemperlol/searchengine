@@ -1,5 +1,6 @@
 package searchengine.services.indexing;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,11 @@ public class IndexingServiceImpl
     private IndexingServiceImpl(Site site, String pageUrl) {
         this.site = site;
         this.pageUrl = pageUrl;
+    }
+
+    @Override
+    public boolean getIndexingStopped() {
+        return indexingStopped.get();
     }
 
     private void clearTablesBeforeStartIndexing() {
@@ -136,14 +142,15 @@ public class IndexingServiceImpl
 
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
             return IndexingResponseGenerator.successResponse();
-        if (!pool.isShutdown()) executeDelay();
+
+        executeDelay();
 
         Document doc = savePageInfoAndGetDocument();
         if (doc == null) return IndexingResponseGenerator.contentUnavailable(site.getUrl().concat(pageUrl));
 
         site = siteService.updateSiteStatusTime(site.getId());
 
-        return new IndexingTaskResultHandler().HandleTasksResult(new ArrayList<>(createSubtasks(doc)));
+        return new IndexingTaskResultHandler(new ArrayList<>(createSubtasks(doc))).HandleTasksResult();
     }
 
     protected Document savePageInfoAndGetDocument() {

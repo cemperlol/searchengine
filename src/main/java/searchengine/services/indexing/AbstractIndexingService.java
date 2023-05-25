@@ -18,4 +18,6 @@ public abstract class AbstractIndexingService extends RecursiveTask<IndexingTogg
 
     @Override
     public abstract IndexingToggleResponse compute();
+
+    public abstract boolean getIndexingStopped();
 }
