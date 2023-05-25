@@ -1,6 +1,7 @@
 package searchengine.services.page;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
@@ -38,7 +39,11 @@ public class PageService {
     }
 
     public int getTotalPageCount() {
-        return pageRepository.totalCountPage();
+        return pageRepository.totalPageCount();
+    }
+
+    public int getMinId() {
+        return pageRepository.minId();
     }
 
     public Page findByPathAndSiteId(String path, int siteId) {
@@ -49,7 +54,13 @@ public class PageService {
         pageRepository.deleteById(pageId);
     }
 
-    public void deleteAllPages() {
-        pageRepository.deleteAll();
+    public void deleteAll() {
+        int batchSize = 500;
+        int totalRowsAffected = 0;
+
+        do {
+            pageRepository.deleteAllInBatches(batchSize);
+            totalRowsAffected += batchSize;
+        } while (totalRowsAffected < getTotalPageCount());
     }
 }

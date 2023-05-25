@@ -19,6 +19,11 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     @Modifying
     @Transactional
+    @Query(value = "delete from `index`", nativeQuery = true)
+    void deleteAllInBatches(@Param("batchSize") int batchSize);
+
+    @Modifying
+    @Transactional
     @Query("update Index i set i.rank = :rank where i.id = :id")
     void updateIndexRank(@Param("rank") float rank, @Param("id") int id);
 
@@ -30,5 +35,11 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
     Optional<Index> getByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
+
+    @Query("select count(i) from Index i")
+    Integer totalIndexCount();
+
+    @Query("select min(id) from Index")
+    Integer minId();
 }
 

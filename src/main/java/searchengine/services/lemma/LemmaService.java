@@ -1,6 +1,7 @@
 package searchengine.services.lemma;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
@@ -22,6 +23,14 @@ public class LemmaService {
 
     public int getLemmaCountBySiteId(int siteId) {
         return lemmaRepository.countLemmasBySiteId(siteId);
+    }
+
+    public int getTotalLemmaCount() {
+        return lemmaRepository.totalCountLemmas();
+    }
+
+    public int getMinId() {
+        return lemmaRepository.minId();
     }
 
     public Lemma getLemmaById(int id) {
@@ -69,7 +78,12 @@ public class LemmaService {
     }
 
     public void deleteAll() {
-        lemmaRepository.deleteAll();
+        int batchSize = 500;
+        int totalRowsAffected = 0;
+        do {
+            lemmaRepository.deleteAllInBatches(batchSize);
+            totalRowsAffected += batchSize;
+        } while (totalRowsAffected < getTotalLemmaCount());
     }
 
     public boolean filterTooFrequentLemmasOnSite(Lemma lemma, int pageCount) {

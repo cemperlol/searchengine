@@ -51,6 +51,14 @@ public class IndexService {
         return index;
     }
 
+    public int getTotalIndexCount() {
+        return indexRepository.totalIndexCount();
+    }
+
+    public int getMinId() {
+        return indexRepository.minId();
+    }
+
     public List<Index> getByLemmaId(int lemmaId) {
         return indexRepository.getByLemmaId(lemmaId);
     }
@@ -94,7 +102,12 @@ public class IndexService {
     }
 
     public void deleteAll() {
-        indexRepository.deleteAll();
+        int batchSize = 500;
+        int totalRowsAffected = 0;
+        do {
+            indexRepository.deleteAllInBatches(batchSize);
+            totalRowsAffected += batchSize;
+        } while (totalRowsAffected < getTotalIndexCount());
     }
 
     public boolean pageContainsLemma(int lemmaId, int pageId) {

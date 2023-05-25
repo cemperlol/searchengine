@@ -57,10 +57,11 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<IndexingToggleResponse> stopIndexing() {
-        if (indexator == null) return ResponseEntity.ok(IndexingResponseGenerator.failureNoIndexingRunning());
+        if (indexator == null) return ResponseEntity.ok(IndexingResponseGenerator.noIndexingRunning());
 
         IndexingToggleResponse response = indexator.stopIndexing();
         indexator = null;
+
         return ResponseEntity.ok(response);
     }
 

@@ -12,20 +12,24 @@ public class IndexingResponseGenerator {
         return new IndexingToggleResponse(false, errorMsg);
     }
 
-    public static IndexingToggleResponse failureSiteNotAdded() {
+    public static IndexingToggleResponse siteNotAdded() {
         return createFailureResponse("This website was not added to the site list");
     }
 
-    public static IndexingToggleResponse failurePageUnavailable(String fullUrl) {
-        return createFailureResponse("Failed to index page, " + fullUrl + " unavailable");
+    public static IndexingToggleResponse contentUnavailable(String fullUrl) {
+        return createFailureResponse("Failed to index page, " + fullUrl + " content unavailable");
     }
 
-    public static IndexingToggleResponse failureNoIndexingRunning() {
+    public static IndexingToggleResponse noIndexingRunning() {
         return createFailureResponse("No indexing is running");
     }
 
-    public static IndexingToggleResponse failureIndexingAlreadyStarted() {
+    public static IndexingToggleResponse indexingAlreadyStarted() {
         return createFailureResponse("Indexing already started");
+    }
+
+    public static IndexingToggleResponse userStoppedIndexing() {
+        return createFailureResponse("User stopped indexing");
     }
 
     public static IndexingToggleResponse failedToCompleteIndexingTasks() {

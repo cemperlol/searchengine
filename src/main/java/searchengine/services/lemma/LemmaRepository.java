@@ -22,4 +22,15 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     @Query("select count(lemma) from Lemma where site.id = :siteId")
     Integer countLemmasBySiteId(@Param("siteId") int site);
+
+    @Query("select count(l) from Lemma l")
+    Integer totalCountLemmas();
+
+    @Query("select min(id) from Lemma")
+    Integer minId();
+
+    @Modifying
+    @Transactional
+    @Query(value = "delete from lemma", nativeQuery = true)
+    void deleteAllInBatches(@Param("batchSize") int batchSize);
 }

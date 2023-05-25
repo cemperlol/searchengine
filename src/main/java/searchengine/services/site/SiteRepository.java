@@ -29,4 +29,15 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
 
     @Query("select s from Site s where s.url = :url")
     Optional<Site> findSiteByUrl(@Param("url") String url);
+
+    @Query("select count(s) from Site s")
+    Integer totalSiteCount();
+
+    @Query("select min(id) from Site")
+    Integer minId();
+
+    @Modifying
+    @Transactional
+    @Query(value = "delete from site", nativeQuery = true)
+    void deleteAllInBatches(@Param("batchSize") int batchSize);
 }

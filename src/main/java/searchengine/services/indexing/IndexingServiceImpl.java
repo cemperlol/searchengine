@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 @Service
@@ -39,6 +40,8 @@ public class IndexingServiceImpl
     private static IndexService indexService;
 
     private static ForkJoinPool pool;
+
+    private static final AtomicBoolean indexingStopped = new AtomicBoolean();
 
     private Site site;
 
@@ -60,8 +63,8 @@ public class IndexingServiceImpl
     private void clearTablesBeforeStartIndexing() {
         indexService.deleteAll();
         lemmaService.deleteAll();
-        pageService.deleteAllPages();
-        siteService.deleteAllSites();
+        pageService.deleteAll();
+        siteService.deleteAll();
     }
 
     private void clearTablesBeforeIndexPage() {
@@ -74,7 +77,8 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse startIndexing() {
-        if (pool != null && !pool.isQuiescent()) return IndexingResponseGenerator.failureIndexingAlreadyStarted();
+        if (pool != null && !indexingStopped.get()) return IndexingResponseGenerator.indexingAlreadyStarted();
+        indexingStopped.set(false);
         pool = new ForkJoinPool();
 
         CompletableFuture.runAsync(this::prepareIndexing);
@@ -104,9 +108,9 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse stopIndexing() {
-        if (pool == null) return IndexingResponseGenerator.failureNoIndexingRunning();
+        if (indexingStopped.get()) return IndexingResponseGenerator.noIndexingRunning();
 
-        pool.shutdownNow();
+        indexingStopped.set(true);
         siteService.updateSitesOnIndexingStop();
 
         return IndexingResponseGenerator.successResponse();
@@ -115,7 +119,7 @@ public class IndexingServiceImpl
     @Override
     public IndexingToggleResponse indexPage(String url) {
         site = siteService.findSiteByUrl(HtmlWorker.getBaseUrl(url));
-        if (site == null) return IndexingResponseGenerator.failureSiteNotAdded();
+        if (site == null) return IndexingResponseGenerator.siteNotAdded();
         pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), HtmlWorker.makeUrlWithSlashEnd(url));
 
         clearTablesBeforeIndexPage();
@@ -126,6 +130,8 @@ public class IndexingServiceImpl
 
     @Override
     public IndexingToggleResponse compute() {
+        if (indexingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
+
         pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
 
         if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
@@ -133,7 +139,7 @@ public class IndexingServiceImpl
         if (!pool.isShutdown()) executeDelay();
 
         Document doc = savePageInfoAndGetDocument();
-        if (doc == null) return IndexingResponseGenerator.failurePageUnavailable(site.getUrl().concat(pageUrl));
+        if (doc == null) return IndexingResponseGenerator.contentUnavailable(site.getUrl().concat(pageUrl));
 
         site = siteService.updateSiteStatusTime(site.getId());
 

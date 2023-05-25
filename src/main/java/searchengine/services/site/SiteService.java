@@ -94,8 +94,22 @@ public class SiteService {
         return (List<Site>) siteRepository.findAll();
     }
 
-    public void deleteAllSites() {
-        siteRepository.deleteAll();
+    public int getTotalSiteCount() {
+        return siteRepository.totalSiteCount();
+    }
+
+    public int getMinId() {
+        return siteRepository.minId();
+    }
+
+    public void deleteAll() {
+        int batchSize = 500;
+        int totalRowsAffected = 0;
+
+        do {
+            siteRepository.deleteAllInBatches(batchSize);
+            totalRowsAffected += batchSize;
+        } while (totalRowsAffected < getTotalSiteCount());
     }
 
     public List<searchengine.config.Site> getSites() {
