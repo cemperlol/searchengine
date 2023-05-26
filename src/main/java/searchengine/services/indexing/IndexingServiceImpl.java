@@ -147,6 +147,7 @@ public class IndexingServiceImpl
 
         Document doc = savePageInfoAndGetDocument();
         if (doc == null) return IndexingResponseGenerator.contentUnavailable(site.getUrl().concat(pageUrl));
+        if (doc.baseUri().equals(pageUrl)) return IndexingResponseGenerator.successResponse();
 
         site = siteService.updateSiteStatusTime(site.getId());
 
@@ -159,7 +160,8 @@ public class IndexingServiceImpl
         pageResponse.setPath(pageUrl);
 
         Page page = pageService.savePage(pageResponse, site);
-        if (page == null || page.getContent().equals("Content is unknown")) return null;
+        if (page == null) return null;
+        if (page.getContent().equals("Content is unknown")) return new Document(pageUrl);
 
         Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
 

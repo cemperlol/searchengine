@@ -85,7 +85,7 @@ public class SiteService {
     }
 
     public void updateSitesOnIndexingStop() {
-        findAllSites().stream().filter(s -> !s.getStatus().equals(SiteStatus.INDEXED)).forEach(s -> {
+        findAllSites().stream().filter(s -> s.getStatus().equals(SiteStatus.INDEXING)).forEach(s -> {
             updateSiteLastError(s.getId(), "User stopped indexing");
             updateSiteStatus(s.getId(), SiteStatus.FAILED);
         });

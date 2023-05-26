@@ -20,6 +20,7 @@ public class SearchResponse {
 
     public SearchResponse(SearchResponse response) {
         this.result = response.result;
+        this.error = response.error;
         this.count = response.count;
         this.data = response.data;
     }

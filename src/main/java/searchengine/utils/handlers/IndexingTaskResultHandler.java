@@ -30,10 +30,8 @@ public class IndexingTaskResultHandler {
         List<IndexingToggleResponse> results = getTasksResult();
         if (results == null) return IndexingResponseGenerator.failedToGetIndexingTasksResult();
 
-        if (results.stream().noneMatch(result -> result.getError().equals("User stopped indexing")) &&
-                results.stream().anyMatch(IndexingToggleResponse::isResult)) {
+        if (results.stream().anyMatch(IndexingToggleResponse::isResult))
             return IndexingResponseGenerator.successResponse();
-        }
 
         StringJoiner totalError = new StringJoiner(", ");
         results.forEach(r -> {

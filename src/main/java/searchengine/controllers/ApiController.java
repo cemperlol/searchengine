@@ -99,6 +99,8 @@ public class ApiController {
         }
 
         SearchResponse response = new SearchResponse(SearchCache.getResponse());
+        if (response.getData() == null) return ResponseEntity.ok(response);
+
         response.setData(Arrays.stream(response.getData()).skip(offset).limit(limit).toArray(SearchServiceResult[]::new));
 
         return ResponseEntity.ok(response);
