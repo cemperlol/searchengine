@@ -110,7 +110,8 @@ public class IndexService {
         } while (totalRowsAffected < getTotalIndexCount());
     }
 
-    public boolean pageContainsLemma(int lemmaId, int pageId) {
-        return getByLemmaAndPageId(lemmaId, pageId) != null;
+    public boolean pageContainsLemma(int pageId, int lemmaId) {
+        Index index = getByLemmaAndPageId(lemmaId, pageId);
+        return index != null;
     }
 }

@@ -37,4 +37,7 @@ public class Site {
 
     @OneToMany(mappedBy = "site")
     private Set<Page> pages = new HashSet<>();
+
+    @OneToMany(mappedBy = "site")
+    private Set<Lemma> lemmas = new HashSet<>();
 }

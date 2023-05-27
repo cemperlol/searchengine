@@ -1,6 +1,5 @@
 package searchengine.services.indexing;
 
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;

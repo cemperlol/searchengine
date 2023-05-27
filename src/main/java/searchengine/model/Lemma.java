@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "lemma")
@@ -14,15 +15,18 @@ public class Lemma {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
-    int id;
+    private int id;
 
     @ManyToOne
     @JoinColumn(name = "site_id", nullable = false)
-    Site site;
+    private Site site;
 
     @Column(nullable = false)
-    String lemma;
+    private String lemma;
 
     @Column(nullable = false)
-    int frequency;
+    private int frequency;
+
+    @OneToMany(mappedBy = "lemma")
+    private Set<Index> indexes;
 }
