@@ -16,6 +16,7 @@ SearchEngine – проект поискового движка, в которо
 - MySQL
 - Liquibase
 - Lucene Framework
+- Stream API
 - Библиотека Apache Commons
 - Lombok
 - Maven
