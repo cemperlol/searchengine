@@ -40,20 +40,22 @@ public class SearchServiceImpl implements SearchService {
     @Override
     public SearchResponse siteSearch(String query, String siteUrl) {
         Site site = siteService.findSiteByUrl(siteUrl);
-        if (site == null || site.getStatus() == SiteStatus.INDEXING) return SearchResponseGenerator.siteNotIndexed();
-        int pageCount = pageService.getPageCount(site.getId());
+        if (site == null || site.getStatus() == SiteStatus.INDEXING)
+            return SearchResponseGenerator.siteNotIndexed();
+        int pageCount = site.getPages().size();
 
-        List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site.getId(), pageCount);
-        List<Page> pages = getPagesWithFullQuery(lemmas, site.getId());
+        List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site, pageCount);
+        List<Page> pages = getPagesWithFullQuery(lemmas, site);
 
-        if (pages.isEmpty() || lemmas.isEmpty()) return SearchResponseGenerator.noResults();
+        if (pages.isEmpty()) return SearchResponseGenerator.noResults();
 
-        Map<Page, List<Index>> pageAndIndexes = new HashMap<>();
+        Map<Page, Set<Index>> pageAndIndexes = new HashMap<>();
         pageCount = pages.size();
-        pages.forEach(page -> pageAndIndexes.put(page, indexService.getByPageId(page.getId())));
+        pages.forEach(page -> pageAndIndexes.put(page, page.getIndexes()));
         absRelevance = Math.max(absRelevance, RelevanceWorker.getAbsRelevance(pageAndIndexes.values()));
 
-        return SearchResponseGenerator.resultsFound(pageCount, searchResults(lemmas, pageAndIndexes, absRelevance));
+        return SearchResponseGenerator
+                .resultsFound(pageCount, searchResults(lemmas, pageAndIndexes, absRelevance));
     }
 
     @Override
@@ -76,41 +78,39 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
-        sitesResponses.forEach(response -> {
+        sitesResponses.forEach(response ->
             Arrays.stream(response.getData()).forEach(result -> {
                 Page page = pageService.findByPathAndSiteId(result.getUri(),
                         siteService.findSiteByUrl(result.getSite()).getId());
 
                 result.setRelevance(RelevanceWorker
-                        .getRelRelevance(indexService.getByPageId(page.getId()), absRelevance));
-            });
-        });
+                        .getRelRelevance(page.getIndexes(), absRelevance));
+            }));
 
         return sitesResponses;
     }
 
-    private List<Lemma> getAscendingLemmasFromQuery(String query, int siteId, int pageCount) {
-        return Lemmatizator.getLemmas(query).keySet().stream()
-                .map(lemmaValue -> lemmaService.getByLemmaAndSiteId(lemmaValue, siteId))
-                .filter(Objects::nonNull)
-                .filter(lemma -> lemmaService.filterTooFrequentLemmasOnSite(lemma, pageCount))
+    private List<Lemma> getAscendingLemmasFromQuery(String query, Site site, int pageCount) {
+        Set<String> lemmaValues = Lemmatizator.getLemmas(query).keySet();
+
+        return site.getLemmas().stream()
+                .filter(lemma -> lemmaValues.contains(lemma.getLemma()) &&
+                        lemmaService.filterTooFrequentLemmasOnSite(lemma, pageCount))
                 .sorted(Comparator.comparingInt(Lemma::getFrequency))
                 .toList();
     }
 
-    private List<Page> getPagesWithFullQuery(List<Lemma> lemmas, int siteId) {
+    private List<Page> getPagesWithFullQuery(List<Lemma> lemmas, Site site) {
         if (lemmas.isEmpty()) return new ArrayList<>();
 
-        return indexService.getPagesByLemmaId(lemmas.get(0).getId()).stream()
+        return site.getPages().stream()
                 .filter(page -> lemmas.stream()
-                        .allMatch(lemma -> indexService.pageContainsLemma(lemma.getId(), page.getId())))
-                .filter(page -> page.getSite().getId() == siteId)
-                .distinct()
+                        .allMatch(lemma -> indexService.pageContainsLemma(page.getId(), lemma.getId())))
                 .toList();
     }
 
     private SearchServiceResult[] searchResults(List<Lemma> lemmas,
-                                                Map<Page, List<Index>> pageAndIndexes,
+                                                Map<Page, Set<Index>> pageAndIndexes,
                                                 float absRelevance) {
         List<SearchServiceResult> results = pageAndIndexes.keySet().stream()
                 .map(page -> {
@@ -119,7 +119,8 @@ public class SearchServiceImpl implements SearchService {
                     result.setSiteName(page.getSite().getName());
                     result.setUri(page.getPath());
                     result.setTitle(HtmlWorker.getPageTitle(page.getContent()));
-                    result.setSnippet(SnippetWorker.getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
+                    result.setSnippet(SnippetWorker
+                            .getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
                     result.setRelevance(RelevanceWorker.getRelRelevance(pageAndIndexes.get(page), absRelevance));
 
                     return result;
