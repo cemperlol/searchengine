@@ -4,11 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.indexing.IndexingToggleResponse;
-import searchengine.dto.search.SearchCache;
+import searchengine.dto.search.LastSearch;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.model.Site;
 import searchengine.services.index.IndexService;
 import searchengine.services.indexing.IndexingService;
 import searchengine.services.indexing.IndexingServiceImpl;
@@ -22,7 +21,6 @@ import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.responseGenerators.SearchResponseGenerator;
 
 import java.util.Arrays;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -86,19 +84,21 @@ public class ApiController {
 
     @GetMapping("/search")
     public ResponseEntity<SearchResponse> search(@RequestParam(name = "query") String query,
-                                                 @RequestParam(name = "site", required = false) String site,
+                                                 @RequestParam(name = "site", required = false, defaultValue = "")
+                                                    String site,
                                                  @RequestParam(name = "offset", required = false) int offset,
                                                  @RequestParam(name = "limit", required = false) int limit) {
 
         if (query.isBlank()) return ResponseEntity.ok(SearchResponseGenerator.emptyQuery());
 
-        if (!query.equals(SearchCache.getQuery())) {
-            SearchCache.setQuery(query);
+        if (!query.equals(LastSearch.getQuery()) || !site.equals(LastSearch.getSite())) {
+            LastSearch.setQuery(query);
+            LastSearch.setSite("");
             SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
-            SearchCache.setResponse(site == null ? search.globalSearch(query) : search.siteSearch(query, site));
+            LastSearch.setResponse(site.equals("") ? search.globalSearch(query) : search.siteSearch(query, site));
         }
 
-        SearchResponse response = new SearchResponse(SearchCache.getResponse());
+        SearchResponse response = new SearchResponse(LastSearch.getResponse());
         if (response.getData() == null) return ResponseEntity.ok(response);
 
         response.setData(Arrays.stream(response.getData()).skip(offset).limit(limit).toArray(SearchServiceResult[]::new));

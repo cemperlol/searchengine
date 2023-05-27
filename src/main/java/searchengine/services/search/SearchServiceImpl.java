@@ -46,7 +46,7 @@ public class SearchServiceImpl implements SearchService {
         List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site.getId(), pageCount);
         List<Page> pages = getPagesWithFullQuery(lemmas, site.getId());
 
-        if (pages.isEmpty()) return SearchResponseGenerator.noResults();
+        if (pages.isEmpty() || lemmas.isEmpty()) return SearchResponseGenerator.noResults();
 
         Map<Page, List<Index>> pageAndIndexes = new HashMap<>();
         pageCount = pages.size();
