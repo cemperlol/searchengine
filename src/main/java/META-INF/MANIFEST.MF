@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: searchengine.Application
+Start-Class: searchengine.Application
 
