@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: 0
-      author: ${author}
+      author: root
       changes:
         - createTable:
             tableName: site
@@ -40,7 +40,7 @@ databaseChangeLog:
 
   - changeSet:
       id: 1
-      author: ${author}
+      author: root
       changes:
         - createTable:
             tableName: page
@@ -78,7 +78,7 @@ databaseChangeLog:
 
   - changeSet:
       id: 2
-      author: ${author}
+      author: root
       changes:
         - createTable:
             tableName: lemma
@@ -111,7 +111,7 @@ databaseChangeLog:
 
   - changeSet:
       id: 3
-      author: ${author}
+      author: root
       changes:
         - createTable:
             tableName: index
@@ -146,7 +146,7 @@ databaseChangeLog:
 
   - changeSet:
       id: 4
-      author: ${author}
+      author: root
       changes:
         - createIndex:
             columns:
@@ -154,7 +154,6 @@ databaseChangeLog:
                   name: path(255)
             indexName: path_index
             tableName: page
-            unique: false
         - createIndex:
             columns:
               - column:
