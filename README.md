@@ -62,11 +62,11 @@ SearchEngine удовлетворяет потребность человека 
     <i>
       <p>
         &nbsp&nbsp&nbsp&nbsp&nbsp<strong>Важно:</strong> если Вы хотите добавить свои файлы для индексации, то Вам необходимо добавлять их <strong>строго</strong> в
-        том же формате, что &nbsp&nbsp&nbsp&nbsp&nbspи на снимке экрана выше
+        том же формате, что и на снимке экрана выше
       </p>
       <p>
         &nbsp&nbsp&nbsp&nbsp&nbsp"- url" – ссылка на главную страницу сайта в формате: <code>http://www.example.com</code> – где <code>http</code> может быть
-        заменено на <code>https</code>, &nbsp&nbsp&nbsp&nbsp&nbspа <code>www.</code> может отсутствовать<br>
+        заменено на <code>https</code>, а <code>www.</code> может отсутствовать<br>
       </p>
       <p>
         &nbsp&nbsp&nbsp&nbsp&nbsp"name" – название сайта        
