@@ -43,24 +43,15 @@ SearchEngine удовлетворяет потребность человека 
  ---
  
 ## Демо
-- Статистика:
-
-<img width=50% alt="Демонстрация работы статистики по сайтам" src="https://github.com/cemperlol/searchengine/assets/98911150/02ead659-1496-45a4-bb75-1708715e5e01">
-<br>
 
 - Индексация:
 
-<img width=50% alt="Демонстрация работы индексации сайтов" src="https://github.com/cemperlol/searchengine/assets/98911150/b445afbe-105a-4354-99ba-742f63c6e0aa">
-<br>
-
-- Остановка индексации:
-
-<img width=50% alt="Демонстрация работы остановки индексации сайтов" src="https://github.com/cemperlol/searchengine/assets/98911150/23216f72-d058-4273-b9de-440009ad3724">
+![Демонстрация работы индексации сайтов](https://github.com/cemperlol/searchengine/assets/98911150/b445afbe-105a-4354-99ba-742f63c6e0aa)
 <br>
 
 - Поиск по проиндексированным сайтам
 
-<img width=50% alt="Демонстрация работы поиска по проиндексированным сайтам" src="https://github.com/cemperlol/searchengine/assets/98911150/f4a244ab-e59b-49cf-a4cb-f39a4e100f29">
+![Демонстрация работы поиска по проиндексированным сайтам](https://github.com/cemperlol/searchengine/assets/98911150/f4a244ab-e59b-49cf-a4cb-f39a4e100f29)
 <br>
  
  ---
@@ -77,17 +68,17 @@ SearchEngine удовлетворяет потребность человека 
 
 **4.** Перейдите в папку `target` и скопируйте файл `SearchEngine.jar` в созданную Ваши директорию
 
-<img width="50%" alt="Снимок экрана 2023-05-29 в 00 02 38" src="https://github.com/cemperlol/searchengine/assets/98911150/1abfcd0b-93e8-454d-8006-5e7d1b8e615e">
+<img width="50%" alt="Местонахождение файла SearchEngine.jar в проекте" src="https://github.com/cemperlol/searchengine/assets/98911150/1abfcd0b-93e8-454d-8006-5e7d1b8e615e">
 <br>
 
-**5.** Скопируйте папку `config` в Вашу директорию:
+**5.** Скопируйте директорию `config` в Вашу директорию:
 
-<img width="50%" alt="Снимок экрана 2023-05-29 в 00 03 13" src="https://github.com/cemperlol/searchengine/assets/98911150/cdce4bb6-90b9-4dc3-b86d-ab79523721f6">
+<img width="50%" alt="Местонахождение директории config в проекте" src="https://github.com/cemperlol/searchengine/assets/98911150/cdce4bb6-90b9-4dc3-b86d-ab79523721f6">
 <br>
 
 **6.** Настройте список сайтов для индексации в файле application.yaml, который находится в скопированной Вами папке config (файл можно открыть с помощью любого текстового редактора. Пример настройки списка сайтов для индексации
 <figure>
-  <img width="50%" alt="Снимок экрана 2023-05-28 в 23 59 35" src="https://github.com/cemperlol/searchengine/assets/98911150/b052adda-a11f-4a95-886a-6c463ccd4337">
+  <img width="50%" alt="Пример записи списка сайтов для индексации" src="https://github.com/cemperlol/searchengine/assets/98911150/b052adda-a11f-4a95-886a-6c463ccd4337">
   <br>
   <figcaption>
     <i>
