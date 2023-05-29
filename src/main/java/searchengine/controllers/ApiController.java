@@ -13,6 +13,7 @@ import searchengine.services.indexing.IndexingService;
 import searchengine.services.indexing.IndexingServiceImpl;
 import searchengine.services.lemma.LemmaService;
 import searchengine.services.page.PageService;
+import searchengine.services.search.SearchService;
 import searchengine.services.search.SearchServiceImpl;
 import searchengine.services.site.SiteService;
 import searchengine.services.statistics.StatisticsService;
@@ -94,7 +95,7 @@ public class ApiController {
         if (!query.equals(LastSearch.getQuery()) || !site.equals(LastSearch.getSite())) {
             LastSearch.setQuery(query);
             LastSearch.setSite("");
-            SearchServiceImpl search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
+            SearchService search = new SearchServiceImpl(siteService, pageService, lemmaService, indexService);
             LastSearch.setResponse(site.equals("") ? search.globalSearch(query) : search.siteSearch(query, site));
         }
 

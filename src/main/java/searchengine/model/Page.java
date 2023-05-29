@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -29,6 +30,13 @@ public class Page {
 
     @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;
+
+    @ManyToMany
+    @JoinTable(name = "index",
+            joinColumns = @JoinColumn(name = "page_id"),
+            inverseJoinColumns = @JoinColumn(name = "lemma_id")
+    )
+    private Set<Lemma> pageLemmas = new HashSet<>();
 
     @OneToMany(mappedBy = "page")
     private Set<Index> indexes;

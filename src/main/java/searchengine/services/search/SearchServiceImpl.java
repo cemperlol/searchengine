@@ -42,7 +42,7 @@ public class SearchServiceImpl implements SearchService {
         Site site = siteService.findSiteByUrl(siteUrl);
         if (site == null || site.getStatus() == SiteStatus.INDEXING)
             return SearchResponseGenerator.siteNotIndexed();
-        int pageCount = site.getPages().size();
+        int pageCount = pageService.getTotalPageCount();
 
         List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site, pageCount);
         List<Page> pages = getPagesWithFullQuery(lemmas, site);
@@ -80,11 +80,12 @@ public class SearchServiceImpl implements SearchService {
     private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
         sitesResponses.forEach(response ->
             Arrays.stream(response.getData()).forEach(result -> {
-                Page page = pageService.findByPathAndSiteId(result.getUri(),
-                        siteService.findSiteByUrl(result.getSite()).getId());
-
+                Site site = siteService.findSiteByUrl(result.getSite());
+                Set<Index> indexes = site.getPages().stream()
+                        .filter(sitePage -> sitePage.getPath().equals(result.getUri()))
+                        .findFirst().get().getIndexes();
                 result.setRelevance(RelevanceWorker
-                        .getRelRelevance(page.getIndexes(), absRelevance));
+                        .getRelRelevance(indexes, absRelevance));
             }));
 
         return sitesResponses;
@@ -104,8 +105,7 @@ public class SearchServiceImpl implements SearchService {
         if (lemmas.isEmpty()) return new ArrayList<>();
 
         return site.getPages().stream()
-                .filter(page -> lemmas.stream()
-                        .allMatch(lemma -> indexService.pageContainsLemma(page.getId(), lemma.getId())))
+                .filter(page -> page.getPageLemmas().containsAll(lemmas))
                 .toList();
     }
 
