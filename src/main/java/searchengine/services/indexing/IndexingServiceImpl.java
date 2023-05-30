@@ -3,20 +3,22 @@ package searchengine.services.indexing;
 import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
+import searchengine.dao.index.IndexService;
+import searchengine.dao.lemma.LemmaService;
+import searchengine.dao.page.PageService;
+import searchengine.dao.site.SiteService;
 import searchengine.dto.indexing.IndexingToggleResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.services.index.IndexService;
-import searchengine.services.lemma.LemmaService;
+import searchengine.model.SiteStatus;
 import searchengine.services.logging.ApplicationLogger;
-import searchengine.services.page.PageService;
-import searchengine.services.site.SiteService;
 import searchengine.utils.handlers.IndexingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
+import searchengine.utils.workers.HttpWorker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,13 +33,13 @@ import java.util.regex.Pattern;
 public class IndexingServiceImpl
         extends AbstractIndexingService {
 
-    private static SiteService siteService;
+    private static SiteService siteServiceImpl;
 
-    private static PageService pageService;
+    private static PageService pageServiceImpl;
 
-    private static LemmaService lemmaService;
+    private static LemmaService lemmaServiceImpl;
 
-    private static IndexService indexService;
+    private static IndexService indexServiceImpl;
 
     private static ForkJoinPool pool;
 
@@ -47,12 +49,12 @@ public class IndexingServiceImpl
 
     private String pageUrl;
 
-    public IndexingServiceImpl(SiteService siteService, PageService pageService,
-                               LemmaService lemmaService, IndexService indexService) {
-        IndexingServiceImpl.siteService = siteService;
-        IndexingServiceImpl.pageService = pageService;
-        IndexingServiceImpl.lemmaService = lemmaService;
-        IndexingServiceImpl.indexService = indexService;
+    public IndexingServiceImpl(SiteService siteServiceImpl, PageService pageServiceImpl,
+                               LemmaService lemmaServiceImpl, IndexService indexServiceImpl) {
+        IndexingServiceImpl.siteServiceImpl = siteServiceImpl;
+        IndexingServiceImpl.pageServiceImpl = pageServiceImpl;
+        IndexingServiceImpl.lemmaServiceImpl = lemmaServiceImpl;
+        IndexingServiceImpl.indexServiceImpl = indexServiceImpl;
     }
 
     private IndexingServiceImpl(Site site, String pageUrl) {
@@ -66,18 +68,18 @@ public class IndexingServiceImpl
     }
 
     private void clearTablesBeforeStartIndexing() {
-        indexService.deleteAll();
-        lemmaService.deleteAll();
-        pageService.deleteAll();
-        siteService.deleteAll();
+        indexServiceImpl.deleteAll();
+        lemmaServiceImpl.deleteAll();
+        pageServiceImpl.deleteAll();
+        siteServiceImpl.deleteAll();
     }
 
     private void clearTablesBeforeIndexPage() {
-        int pageId = pageService.findByPathAndSiteId(pageUrl, site.getId()).getId();
-        List<Lemma> lemmas = indexService.getLemmasByPageId(pageId);
-        indexService.deleteIndexByPageId(pageId);
-        lemmaService.deletePageInfo(lemmas);
-        pageService.deletePageById(pageId);
+        int pageId = pageServiceImpl.getByPathAndSiteId(pageUrl, site.getId()).getId();
+        List<Lemma> lemmas = indexServiceImpl.getLemmasByPageId(pageId);
+        indexServiceImpl.deleteByPageId(pageId);
+        lemmaServiceImpl.deletePageInfo(lemmas);
+        pageServiceImpl.deleteById(pageId);
     }
 
     @Override
@@ -94,9 +96,10 @@ public class IndexingServiceImpl
     private void prepareIndexing() {
         clearTablesBeforeStartIndexing();
 
-        List<IndexingServiceImpl> tasks = new ArrayList<>();
-        siteService.saveIndexingSites().forEach(s ->
-                tasks.add(new IndexingServiceImpl(s, HtmlWorker.makeUrlWithSlashEnd(s.getUrl()))));
+        List<IndexingServiceImpl> tasks = siteServiceImpl.getConfigSites().stream()
+                .map(s -> new IndexingServiceImpl(siteServiceImpl.save(s),
+                        HttpWorker.makeUrlWithSlashEnd(s.getUrl())))
+                .toList();
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
     }
@@ -105,9 +108,9 @@ public class IndexingServiceImpl
         IndexingToggleResponse result = pool.invoke(task);
 
         if (result.isResult()) {
-            siteService.saveSucceedIndexSite(task.site.getId());
+            siteServiceImpl.updateStatus(task.site.getId(), SiteStatus.INDEXED);
         } else {
-            siteService.saveFailedIndexSite(task.site.getId(), result.getError());
+            siteServiceImpl.updateLastError(task.site.getId(), result.getError());
         }
     }
 
@@ -116,16 +119,17 @@ public class IndexingServiceImpl
         if (indexingStopped.get()) return IndexingResponseGenerator.noIndexingRunning();
 
         indexingStopped.set(true);
-        siteService.updateSitesOnIndexingStop();
+        siteServiceImpl.getAll()
+                .forEach(site -> siteServiceImpl.updateLastError(site.getId(), "User stopped indexing"));
 
         return IndexingResponseGenerator.successResponse();
     }
 
     @Override
     public IndexingToggleResponse indexPage(String url) {
-        site = siteService.findSiteByUrl(HtmlWorker.getBaseUrl(url));
+        site = siteServiceImpl.getByUrl(HttpWorker.getBaseUrl(url));
         if (site == null) return IndexingResponseGenerator.siteNotAdded();
-        pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), HtmlWorker.makeUrlWithSlashEnd(url));
+        pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), HttpWorker.makeUrlWithSlashEnd(url));
 
         clearTablesBeforeIndexPage();
         savePageInfoAndGetDocument();
@@ -137,9 +141,9 @@ public class IndexingServiceImpl
     public IndexingToggleResponse compute() {
         if (indexingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
 
-        pageUrl = HtmlWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
+        pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
 
-        if (pageService.findByPathAndSiteId(pageUrl, site.getId()) != null)
+        if (pageServiceImpl.getByPathAndSiteId(pageUrl, site.getId()) != null)
             return IndexingResponseGenerator.successResponse();
 
         executeDelay();
@@ -148,7 +152,7 @@ public class IndexingServiceImpl
         if (doc == null) return IndexingResponseGenerator.contentUnavailable(site.getUrl().concat(pageUrl));
         if (doc.baseUri().equals(pageUrl)) return IndexingResponseGenerator.successResponse();
 
-        site = siteService.updateSiteStatusTime(site.getId());
+        site = siteServiceImpl.updateStatusTime(site.getId());
 
         return new IndexingTaskResultHandler(new ArrayList<>(createSubtasks(doc))).HandleTasksResult();
     }
@@ -158,7 +162,7 @@ public class IndexingServiceImpl
         if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
 
-        Page page = pageService.savePage(pageResponse, site);
+        Page page = pageServiceImpl.save(pageResponse, site);
         if (page == null) return null;
         if (page.getContent().equals("Content is unknown")) return new Document(pageUrl);
 
@@ -172,10 +176,10 @@ public class IndexingServiceImpl
     protected void saveLemmasAndIndexes(Page page, Document doc) {
         Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
 
-        List<Lemma> lemmas = lemmaService.saveAllLemmas(lemmasAndFrequency.keySet(), site);
+        List<Lemma> lemmas = lemmaServiceImpl.saveAll(lemmasAndFrequency.keySet(), site);
         List<Integer> ranks = lemmasAndFrequency.values().stream().toList();
 
-        indexService.saveAllIndexes(page, lemmas, ranks);
+        indexServiceImpl.saveAll(page, lemmas, ranks);
     }
 
     protected List<IndexingServiceImpl> createSubtasks(Document doc) {
@@ -184,10 +188,10 @@ public class IndexingServiceImpl
         return doc.select("a").eachAttr("abs:href")
                 .stream()
                 .distinct()
-                .filter(u -> sitePattern.matcher(HtmlWorker.makeUrlWithoutWWW(u)).find()
+                .filter(u -> sitePattern.matcher(HttpWorker.makeUrlWithoutWWW(u)).find()
                         && !u.contains("#") && !u.contains("?")
-                        && pageService.findByPathAndSiteId(u, site.getId()) == null)
-                .map(u -> new IndexingServiceImpl(site, HtmlWorker.makeUrlWithSlashEnd(u)))
+                        && pageServiceImpl.getByPathAndSiteId(u, site.getId()) == null)
+                .map(u -> new IndexingServiceImpl(site, HttpWorker.makeUrlWithSlashEnd(u)))
                 .toList();
     }
 

@@ -18,17 +18,6 @@ public class SnippetWorker {
         return textBlock.get();
     }
 
-    public static String highlightClosestToLemma(StringBuilder text, String rarestLemma) {
-        String result = "";
-
-        int start = text.toString().indexOf(rarestLemma.substring(0, rarestLemma.length() / 2));
-        int end = text.toString().indexOf(" ", start);
-        result = result.concat(text.substring(0, start)).concat("<b>");
-        result = result.concat(text.substring(start, end)).concat("</b>");
-
-        return result.concat(text.substring(end));
-    }
-
     public static String getSnippet(List<Lemma> lemmas, String text) {
         List<AtomicReference<String>> textBlocks = Arrays.stream(text.split("([.?!]+[\\s]+)"))
                 .map(AtomicReference::new)
@@ -42,20 +31,13 @@ public class SnippetWorker {
 
         int start = getSnippetStart(allocatedText, rarestLemma);
 
-        return "..."
+        return (start == 0 ? "" : "...")
                 .concat(allocatedText.substring(start, Math.min(allocatedText.length(), start + 216)))
                 .concat("...");
     }
 
     private static int getSnippetStart(StringBuilder allocatedText, String rarestLemma) {
-        int start;
-
-        if (!allocatedText.toString().contains("<b>")) {
-            allocatedText.replace(0, allocatedText.length(), highlightClosestToLemma(allocatedText, rarestLemma));
-            start = allocatedText.toString().indexOf(rarestLemma.substring(0, rarestLemma.length() / 2 + 1));
-        } else {
-            start = allocatedText.toString().indexOf(rarestLemma);
-        }
+        int start = allocatedText.toString().indexOf(rarestLemma);
 
         return start < 22 ? 0 : start - 22;
     }

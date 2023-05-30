@@ -1,4 +1,4 @@
-package searchengine.services.site;
+package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,26 +15,23 @@ public interface SiteRepository extends CrudRepository<Site, Integer> {
     @Modifying
     @Transactional
     @Query("update Site s set s.statusTime = current_timestamp where s.id = :id")
-    void updateSiteStatusTime(@Param("id") int id);
+    void updateStatusTime(@Param("id") int id);
 
     @Modifying
     @Transactional
     @Query("update Site s set s.status = :status where s.id = :id")
-    void updateSiteStatus(@Param("status") SiteStatus status, @Param("id") int id);
+    void updateStatus(@Param("status") SiteStatus status, @Param("id") int id);
 
     @Modifying
     @Transactional
     @Query("update Site s set s.lastError = :lastError where s.id = :id")
-    void updateSiteLastError(@Param("lastError") String lastError, @Param("id") int id);
+    void updateLastError(@Param("lastError") String lastError, @Param("id") int id);
 
     @Query("select s from Site s where s.url = :url")
-    Optional<Site> findSiteByUrl(@Param("url") String url);
+    Optional<Site> findByUrl(@Param("url") String url);
 
     @Query("select count(s) from Site s")
-    Integer totalSiteCount();
-
-    @Query("select min(id) from Site")
-    Integer minId();
+    Integer totalCount();
 
     @Modifying
     @Transactional

@@ -1,13 +1,12 @@
 package searchengine.services.search;
 
 import org.springframework.stereotype.Service;
+import searchengine.dao.lemma.LemmaService;
+import searchengine.dao.page.PageService;
+import searchengine.dao.site.SiteService;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.model.*;
-import searchengine.services.index.IndexService;
-import searchengine.services.lemma.LemmaService;
-import searchengine.services.page.PageService;
-import searchengine.services.site.SiteService;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responseGenerators.SearchResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
@@ -19,30 +18,27 @@ import java.util.*;
 @Service
 public class SearchServiceImpl implements SearchService {
 
-    private final SiteService siteService;
+    private final SiteService siteServiceImpl;
 
-    private final PageService pageService;
+    private final PageService pageServiceImpl;
 
-    private final LemmaService lemmaService;
-
-    private final IndexService indexService;
+    private final LemmaService lemmaServiceImpl;
 
     private float absRelevance = -1.0f;
 
-    public SearchServiceImpl(SiteService siteService, PageService pageService,
-                             LemmaService lemmaService, IndexService indexService) {
-        this.siteService = siteService;
-        this.pageService = pageService;
-        this.lemmaService = lemmaService;
-        this.indexService = indexService;
+    public SearchServiceImpl(SiteService siteServiceImpl, PageService pageServiceImpl,
+                             LemmaService lemmaServiceImpl) {
+        this.siteServiceImpl = siteServiceImpl;
+        this.pageServiceImpl = pageServiceImpl;
+        this.lemmaServiceImpl = lemmaServiceImpl;
     }
 
     @Override
     public SearchResponse siteSearch(String query, String siteUrl) {
-        Site site = siteService.findSiteByUrl(siteUrl);
+        Site site = siteServiceImpl.getByUrl(siteUrl);
         if (site == null || site.getStatus() == SiteStatus.INDEXING)
             return SearchResponseGenerator.siteNotIndexed();
-        int pageCount = pageService.getTotalPageCount();
+        int pageCount = pageServiceImpl.getTotalCount();
 
         List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site, pageCount);
         List<Page> pages = getPagesWithFullQuery(lemmas, site);
@@ -60,7 +56,7 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public SearchResponse globalSearch(String query) {
-        List<Site> sites = siteService.findAllSites().stream()
+        List<Site> sites = siteServiceImpl.getAll().stream()
                 .filter(site -> site.getStatus() != SiteStatus.INDEXING)
                 .toList();
 
@@ -80,7 +76,7 @@ public class SearchServiceImpl implements SearchService {
     private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
         sitesResponses.forEach(response ->
             Arrays.stream(response.getData()).forEach(result -> {
-                Site site = siteService.findSiteByUrl(result.getSite());
+                Site site = siteServiceImpl.getByUrl(result.getSite());
                 Set<Index> indexes = site.getPages().stream()
                         .filter(sitePage -> sitePage.getPath().equals(result.getUri()))
                         .findFirst().get().getIndexes();
@@ -96,7 +92,7 @@ public class SearchServiceImpl implements SearchService {
 
         return site.getLemmas().stream()
                 .filter(lemma -> lemmaValues.contains(lemma.getLemma()) &&
-                        lemmaService.filterTooFrequentLemmasOnSite(lemma, pageCount))
+                        lemmaServiceImpl.filterTooFrequentLemmasOnSite(lemma, pageCount))
                 .sorted(Comparator.comparingInt(Lemma::getFrequency))
                 .toList();
     }

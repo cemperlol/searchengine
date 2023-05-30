@@ -8,9 +8,7 @@ import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.services.lemma.LemmaService;
-import searchengine.services.page.PageService;
-import searchengine.services.site.SiteService;
+import searchengine.dao.site.SiteServiceImpl;
 
 import java.util.List;
 
@@ -18,25 +16,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
 
-    private final SiteService siteService;
-
-    private final PageService pageService;
-
-    private final LemmaService lemmaService;
+    private final SiteServiceImpl siteServiceImpl;
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics totalStatistics = new TotalStatistics();
-        totalStatistics.setSites(siteService.getSites().size());
+        totalStatistics.setSites(siteServiceImpl.getConfigSites().size());
 
-        List<DetailedStatisticsItem> detailedStatistics = siteService.getSites().stream().map(configSite -> {
-            Site site = siteService.findSiteByUrl(configSite.getUrl());
-            DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
+        List<DetailedStatisticsItem> detailedStatistics = siteServiceImpl.getConfigSites()
+                .stream()
+                .map(configSite -> {
+                    Site site = siteServiceImpl.getByUrl(configSite.getUrl());
+                    DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
 
-            totalStatistics.setPages(totalStatistics.getPages() + item.getPages());
-            totalStatistics.setLemmas(totalStatistics.getLemmas() + item.getLemmas());
+                    totalStatistics.setPages(totalStatistics.getPages() + item.getPages());
+                    totalStatistics.setLemmas(totalStatistics.getLemmas() + item.getLemmas());
 
-            return item;
+                    return item;
         }).toList();
 
         StatisticsData statisticsData = configureStatisticsData(totalStatistics, detailedStatistics);
@@ -61,8 +57,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         DetailedStatisticsItem item = new DetailedStatisticsItem();
         item.setName(site.getName());
         item.setUrl(site.getUrl());
-        item.setPages(pageService.getPageCount(site.getId()));
-        item.setLemmas(lemmaService.getLemmaCountBySiteId(site.getId()));
+        item.setPages(site.getPages().size());
+        item.setLemmas(site.getLemmas().size());
         item.setStatus(site.getStatus());
         item.setError(site.getLastError() == null ? "" : site.getLastError());
         item.setStatusTime(site.getStatusTime().getTime());
@@ -70,7 +66,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         return item;
     }
 
-    private StatisticsData configureStatisticsData(TotalStatistics totalStatistics, List<DetailedStatisticsItem> detailedStatistics) {
+    private StatisticsData configureStatisticsData(TotalStatistics totalStatistics,
+                                                   List<DetailedStatisticsItem> detailedStatistics) {
         StatisticsData statisticsData = new StatisticsData();
         statisticsData.setTotal(totalStatistics);
         statisticsData.setDetailed(detailedStatistics);

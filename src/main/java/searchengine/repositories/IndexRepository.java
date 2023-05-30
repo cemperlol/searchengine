@@ -1,4 +1,4 @@
-package searchengine.services.index;
+package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +15,7 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
     @Modifying
     @Transactional
     @Query("delete from Index i where i.page.id = :pageId")
-    void deleteIndexByPageId(@Param("pageId") int pageId);
+    void deleteByPageId(@Param("pageId") int pageId);
 
     @Modifying
     @Transactional
@@ -25,21 +25,15 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
     @Modifying
     @Transactional
     @Query("update Index i set i.rank = :rank where i.id = :id")
-    void updateIndexRank(@Param("rank") float rank, @Param("id") int id);
+    void updateRank(@Param("rank") float rank, @Param("id") int id);
 
     @Query("select i from Index i where i.page.id = :pageId")
     List<Index> getByPageId(@Param("pageId") int pageId);
-
-    @Query("select i from Index i where i.lemma.id = :lemmaId")
-    List<Index> getByLemmaId(@Param("lemmaId") int lemmaId);
 
     @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
     Optional<Index> getByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
 
     @Query("select count(i) from Index i")
-    Integer totalIndexCount();
-
-    @Query("select min(id) from Index")
-    Integer minId();
+    Integer totalCount();
 }
 

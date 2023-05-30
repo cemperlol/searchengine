@@ -1,4 +1,4 @@
-package searchengine.services.lemma;
+package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,16 +18,10 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     @Modifying
     @Transactional
     @Query("update Lemma l set l.frequency = :frequency where l.id = :id")
-    void updateLemmaFrequencyById(@Param("id") int id, @Param("frequency") int frequency);
-
-    @Query("select count(lemma) from Lemma where site.id = :siteId")
-    Integer countLemmasBySiteId(@Param("siteId") int site);
+    void updateFrequencyById(@Param("id") int id, @Param("frequency") int frequency);
 
     @Query("select count(l) from Lemma l")
-    Integer totalCountLemmas();
-
-    @Query("select min(id) from Lemma")
-    Integer minId();
+    Integer totalCount();
 
     @Modifying
     @Transactional
