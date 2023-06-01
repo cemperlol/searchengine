@@ -1,6 +1,6 @@
-package searchengine.dao.lemma;
+package searchengine.services.lemma;
 
-import searchengine.dao.DBService;
+import searchengine.services.DBService;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 
@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface LemmaService extends DBService {
 
-    Lemma save(String lemmaValue, Site site);
+    Lemma save(Site site, String lemmaValue);
 
     List<Lemma> saveAll(Collection<String> lemmaValues, Site site);
 

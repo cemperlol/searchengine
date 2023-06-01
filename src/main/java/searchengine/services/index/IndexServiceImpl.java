@@ -1,4 +1,4 @@
-package searchengine.dao.index;
+package searchengine.services.index;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,6 +8,7 @@ import searchengine.model.Page;
 import searchengine.repositories.IndexRepository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 @Service
@@ -21,33 +22,27 @@ public class IndexServiceImpl implements IndexService {
     }
 
     @Override
-    public Index save(Page page, Lemma lemma, int rank) {
-        Index index = indexRepository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
+    public synchronized Index save(Page page, Lemma lemma, int rank) {
+        Index index = createIndex(page, lemma, rank);
 
-        if (index == null) {
-            index = new Index();
-            index.setPage(page);
-            index.setLemma(lemma);
-            index.setRank((float) rank);
-
-            indexRepository.save(index);
-        } else {
-            indexRepository.updateRank(index.getRank() + rank, index.getId());
+        try {
+            return indexRepository.save(index);
+        } catch (Exception e) {
+            return null;
         }
-
-        return index;
     }
 
     @Override
     public List<Index> saveAll(Page page, List<Lemma> lemmas, List<Integer> ranks) {
         return IntStream.range(0, lemmas.size())
                 .mapToObj(i -> save(page, lemmas.get(i), ranks.get(i)))
+                .filter(Objects::nonNull)
                 .toList();
     }
 
     @Override
     public int getTotalCount() {
-        return indexRepository.totalCount();
+        return (int) indexRepository.count();
     }
 
     @Override
@@ -74,11 +69,25 @@ public class IndexServiceImpl implements IndexService {
 
     @Override
     public void deleteAll() {
-        int batchSize = 500;
-        int totalRowsAffected = 0;
-        do {
-            indexRepository.deleteAllInBatches(batchSize);
-            totalRowsAffected += batchSize;
-        } while (totalRowsAffected < getTotalCount());
+        indexRepository.deleteAllInBatch();
+    }
+
+    private Index createIndex(Page page, Lemma lemma, int rank) {
+        Index index = indexRepository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
+
+        if (index == null) {
+            index = new Index();
+            index.setPage(page);
+            index.setLemma(lemma);
+            index.setRank((float) rank);
+        } else {
+            updateIndex(index, rank);
+        }
+
+        return index;
+    }
+
+    private void updateIndex(Index index, int rank) {
+        index.setRank(index.getRank() + rank);
     }
 }

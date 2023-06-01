@@ -1,6 +1,6 @@
-package searchengine.dao.page;
+package searchengine.services.page;
 
-import searchengine.dao.DBService;
+import searchengine.services.DBService;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
 import searchengine.model.Site;

@@ -1,4 +1,4 @@
-package searchengine.dao.page;
+package searchengine.services.page;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class PageServiceImpl implements PageService {
             page.setSite(site);
             page.setPath(pageResponse.getPath());
             page.setCode(pageResponse.getStatusCode());
-            page.setContent(page.getCode() >= 400 ? "Content is unknown" : pageResponse.getResponseBody());
+            page.setContent(page.getCode() >= 400 ? "" : pageResponse.getResponseBody());
         }
 
         return pageRepository.save(page);
@@ -34,7 +34,7 @@ public class PageServiceImpl implements PageService {
 
     @Override
     public int getTotalCount() {
-        return pageRepository.totalCount();
+        return (int) pageRepository.count();
     }
 
     @Override
@@ -49,12 +49,6 @@ public class PageServiceImpl implements PageService {
 
     @Override
     public void deleteAll() {
-        int batchSize = 500;
-        int totalRowsAffected = 0;
-
-        do {
-            pageRepository.deleteAllInBatches(batchSize);
-            totalRowsAffected += batchSize;
-        } while (totalRowsAffected < getTotalCount());
+        pageRepository.deleteAllInBatch();
     }
 }

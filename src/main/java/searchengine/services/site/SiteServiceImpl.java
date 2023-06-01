@@ -1,4 +1,4 @@
-package searchengine.dao.site;
+package searchengine.services.site;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -6,7 +6,6 @@ import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 import searchengine.repositories.SiteRepository;
-import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.HttpWorker;
 
 import java.sql.Timestamp;
@@ -52,7 +51,7 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     public int getTotalCount() {
-        return siteRepository.totalCount();
+        return (int) siteRepository.count();
     }
 
     @Override
@@ -91,13 +90,7 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     public void deleteAll() {
-        int batchSize = 500;
-        int totalRowsAffected = 0;
-
-        do {
-            siteRepository.deleteAllInBatches(batchSize);
-            totalRowsAffected += batchSize;
-        } while (totalRowsAffected < getTotalCount());
+        siteRepository.deleteAllInBatch();
     }
 
     @Override

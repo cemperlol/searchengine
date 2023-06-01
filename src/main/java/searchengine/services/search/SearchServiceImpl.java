@@ -1,9 +1,12 @@
 package searchengine.services.search;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import searchengine.dao.lemma.LemmaService;
-import searchengine.dao.page.PageService;
-import searchengine.dao.site.SiteService;
+import searchengine.dto.search.LastSearch;
+import searchengine.services.lemma.LemmaService;
+import searchengine.services.page.PageService;
+import searchengine.services.site.SiteService;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.model.*;
@@ -26,6 +29,7 @@ public class SearchServiceImpl implements SearchService {
 
     private float absRelevance = -1.0f;
 
+    @Autowired
     public SearchServiceImpl(SiteService siteServiceImpl, PageService pageServiceImpl,
                              LemmaService lemmaServiceImpl) {
         this.siteServiceImpl = siteServiceImpl;
@@ -34,7 +38,27 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public SearchResponse siteSearch(String query, String siteUrl) {
+    public SearchResponse search(String query, String siteUrl, int offset, int limit) {
+        if (query.isBlank()) return SearchResponseGenerator.emptyQuery();
+
+        if (!query.equals(LastSearch.getQuery()) || !siteUrl.equals(LastSearch.getSite())) {
+            LastSearch.setQuery(query);
+            LastSearch.setSite("");
+            LastSearch.setResponse(siteUrl.equals("") ? globalSearch(query) : siteSearch(query, siteUrl));
+        }
+
+        SearchResponse response = new SearchResponse(LastSearch.getResponse());
+        if (response.getData() != null) {
+            response.setData(Arrays.stream(response.getData())
+                    .skip(offset)
+                    .limit(limit)
+                    .toArray(SearchServiceResult[]::new));
+        }
+
+        return response;
+    }
+
+    private SearchResponse siteSearch(String query, String siteUrl) {
         Site site = siteServiceImpl.getByUrl(siteUrl);
         if (site == null || site.getStatus() == SiteStatus.INDEXING)
             return SearchResponseGenerator.siteNotIndexed();
@@ -54,8 +78,7 @@ public class SearchServiceImpl implements SearchService {
                 .resultsFound(pageCount, searchResults(lemmas, pageAndIndexes, absRelevance));
     }
 
-    @Override
-    public SearchResponse globalSearch(String query) {
+    private SearchResponse globalSearch(String query) {
         List<Site> sites = siteServiceImpl.getAll().stream()
                 .filter(site -> site.getStatus() != SiteStatus.INDEXING)
                 .toList();

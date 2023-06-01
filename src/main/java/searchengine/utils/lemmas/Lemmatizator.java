@@ -3,7 +3,7 @@ package searchengine.utils.lemmas;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.nodes.Document;
-import searchengine.services.logging.ApplicationLogger;
+import searchengine.logging.ApplicationLogger;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,7 +20,7 @@ public class Lemmatizator {
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
     public static Map<String, Integer> getLemmas(String text) {
-        if (russianLuceneMorph == null) return new HashMap<>(); //TODO: add lemmatizator exceptions
+        if (russianLuceneMorph == null) return new HashMap<>();
 
         text = makeTextValid(text);
         Matcher matcher = PATTERN.matcher(text);

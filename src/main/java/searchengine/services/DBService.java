@@ -1,4 +1,4 @@
-package searchengine.dao;
+package searchengine.services;
 
 public interface DBService {
 

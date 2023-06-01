@@ -1,6 +1,6 @@
-package searchengine.dao.index;
+package searchengine.services.index;
 
-import searchengine.dao.DBService;
+import searchengine.services.DBService;
 import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;

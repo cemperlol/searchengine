@@ -1,6 +1,6 @@
-package searchengine.dao.site;
+package searchengine.services.site;
 
-import searchengine.dao.DBService;
+import searchengine.services.DBService;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 

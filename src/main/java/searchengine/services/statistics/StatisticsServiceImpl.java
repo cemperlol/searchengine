@@ -1,6 +1,6 @@
 package searchengine.services.statistics;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
@@ -8,25 +8,29 @@ import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.dao.site.SiteServiceImpl;
+import searchengine.services.site.SiteService;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
 
-    private final SiteServiceImpl siteServiceImpl;
+    private final SiteService siteService;
+    
+    @Autowired
+    public StatisticsServiceImpl(SiteService siteService) {
+        this.siteService = siteService;
+    }
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics totalStatistics = new TotalStatistics();
-        totalStatistics.setSites(siteServiceImpl.getConfigSites().size());
+        totalStatistics.setSites(siteService.getConfigSites().size());
 
-        List<DetailedStatisticsItem> detailedStatistics = siteServiceImpl.getConfigSites()
+        List<DetailedStatisticsItem> detailedStatistics = siteService.getConfigSites()
                 .stream()
                 .map(configSite -> {
-                    Site site = siteServiceImpl.getByUrl(configSite.getUrl());
+                    Site site = siteService.getByUrl(configSite.getUrl());
                     DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
 
                     totalStatistics.setPages(totalStatistics.getPages() + item.getPages());

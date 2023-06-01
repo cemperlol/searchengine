@@ -8,5 +8,9 @@ public interface IndexingService {
 
     IndexingToggleResponse stopIndexing();
 
+    IndexingToggleResponse compute();
+
     IndexingToggleResponse indexPage(String url);
+
+    boolean getIndexingStopped();
 }
