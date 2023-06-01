@@ -10,6 +10,4 @@ public interface PageService extends CommonEntityService<Page> {
     Page save(PageResponse pageResponse, Site site);
 
     Page getByPathAndSiteId(String path, int siteId);
-
-
 }

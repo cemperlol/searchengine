@@ -10,6 +10,7 @@ import searchengine.model.Lemma;
 import java.util.Optional;
 
 @Repository
+@Transactional
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {
 
     @Query("select l from Lemma l where l.lemma = :lemmaValue and l.site.id = :siteId")

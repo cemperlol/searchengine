@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@Transactional
 public interface IndexRepository extends CommonEntityRepository<Index> {
 
     @Modifying
