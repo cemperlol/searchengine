@@ -134,14 +134,19 @@ public class IndexingServiceImpl extends RecursiveTask<IndexingToggleResponse>
     public IndexingToggleResponse indexPage(String url) {
         site = siteService.getByUrl(HttpWorker.getBaseUrl(url));
         if (site == null) return IndexingResponseGenerator.siteNotAdded();
+
+        CompletableFuture.runAsync(() -> processIndexPage(url));
+
+        return IndexingResponseGenerator.successResponse();
+    }
+
+    private void processIndexPage(String url) {
         pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), HttpWorker.makeUrlWithSlashEnd(url));
 
         clearTablesBeforeIndexPage();
         savePageInfoAndGetDocument();
 
         site = siteService.updateStatusTime(site.getId());
-
-        return IndexingResponseGenerator.successResponse();
     }
 
     @Override
