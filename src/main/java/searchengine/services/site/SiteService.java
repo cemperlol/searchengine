@@ -1,12 +1,12 @@
 package searchengine.services.site;
 
-import searchengine.services.DBService;
+import searchengine.services.CommonEntityService;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
 import java.util.List;
 
-public interface SiteService extends DBService {
+public interface SiteService extends CommonEntityService<Site> {
 
     Site save(searchengine.config.Site configSite);
 

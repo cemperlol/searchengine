@@ -7,14 +7,8 @@ import javax.persistence.*;
 
 @Entity
 @Table(name = "index")
-@Getter
-@Setter
-public class Index {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private int id;
+@Getter @Setter
+public class Index extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(name = "page_id", nullable = false)

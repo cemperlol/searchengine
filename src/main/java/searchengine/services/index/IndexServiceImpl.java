@@ -6,19 +6,19 @@ import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.repositories.IndexRepository;
+import searchengine.services.AbstractEntityService;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
 @Service
-public class IndexServiceImpl implements IndexService {
-
-    private final IndexRepository indexRepository;
+public class IndexServiceImpl extends AbstractEntityService<Index, IndexRepository>
+        implements IndexService {
 
     @Autowired
-    public IndexServiceImpl(IndexRepository indexRepository) {
-        this.indexRepository = indexRepository;
+    public IndexServiceImpl(IndexRepository repository) {
+        super(repository);
     }
 
     @Override
@@ -26,7 +26,7 @@ public class IndexServiceImpl implements IndexService {
         Index index = createIndex(page, lemma, rank);
 
         try {
-            return indexRepository.save(index);
+            return repository.save(index);
         } catch (Exception e) {
             return null;
         }
@@ -41,13 +41,8 @@ public class IndexServiceImpl implements IndexService {
     }
 
     @Override
-    public int getTotalCount() {
-        return (int) indexRepository.count();
-    }
-
-    @Override
     public List<Index> getByPageId(int pageId) {
-        return indexRepository.getByPageId(pageId);
+        return repository.getByPageId(pageId);
     }
 
     @Override
@@ -58,22 +53,12 @@ public class IndexServiceImpl implements IndexService {
     }
 
     @Override
-    public void deleteById(int id) {
-        indexRepository.deleteById(id);
-    }
-
-    @Override
     public void deleteByPageId(int pageId) {
-        indexRepository.deleteByPageId(pageId);
-    }
-
-    @Override
-    public void deleteAll() {
-        indexRepository.deleteAllInBatch();
+        repository.deleteByPageId(pageId);
     }
 
     private Index createIndex(Page page, Lemma lemma, int rank) {
-        Index index = indexRepository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
+        Index index = repository.getByLemmaAndPageId(page.getId(), lemma.getId()).orElse(null);
 
         if (index == null) {
             index = new Index();

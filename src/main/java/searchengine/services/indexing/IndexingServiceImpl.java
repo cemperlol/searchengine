@@ -2,7 +2,6 @@ package searchengine.services.indexing;
 
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;

@@ -5,22 +5,23 @@ import org.springframework.stereotype.Service;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 import searchengine.repositories.LemmaRepository;
+import searchengine.services.AbstractEntityService;
+
 import java.util.Collection;
 import java.util.List;
 
 @Service
-public class LemmaServiceImpl implements LemmaService {
-
-    private final LemmaRepository lemmaRepository;
+public class LemmaServiceImpl extends AbstractEntityService<Lemma, LemmaRepository>
+        implements LemmaService {
 
     @Autowired
-    public LemmaServiceImpl(LemmaRepository lemmaRepository) {
-        this.lemmaRepository = lemmaRepository;
+    public LemmaServiceImpl(LemmaRepository repository) {
+        super(repository);
     }
 
     @Override
     public synchronized  Lemma save(Site site, String lemmaValue) {
-        return lemmaRepository.save(createLemma(site, lemmaValue));
+        return repository.save(createLemma(site, lemmaValue));
     }
 
     @Override
@@ -31,31 +32,21 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     @Override
-    public int getTotalCount() {
-        return (int) lemmaRepository.count();
-    }
-
-    @Override
     public Lemma getByLemmaAndSiteId(String lemmaValue, int siteId) {
-        return lemmaRepository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
+        return repository.getByLemmaAndSiteId(lemmaValue, siteId).orElse(null);
     }
 
     @Override
     public void deleteById(int id) {
-        lemmaRepository.deleteById(id);
+        repository.deleteById(id);
     }
 
     @Override
     public void deletePageInfo(List<Lemma> lemmas) {
         lemmas.forEach(lemma -> {
-            if (lemma.getFrequency() == 1.0) lemmaRepository.deleteById(lemma.getId());
-            else lemmaRepository.updateFrequencyById(lemma.getId(), lemma.getFrequency() - 1);
+            if (lemma.getFrequency() == 1.0) repository.deleteById(lemma.getId());
+            else repository.updateFrequencyById(lemma.getId(), lemma.getFrequency() - 1);
         });
-    }
-
-    @Override
-    public void deleteAll() {
-        lemmaRepository.deleteAllInBatch();
     }
 
     @Override

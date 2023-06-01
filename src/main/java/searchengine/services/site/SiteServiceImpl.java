@@ -6,27 +6,27 @@ import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 import searchengine.repositories.SiteRepository;
+import searchengine.services.AbstractEntityService;
 import searchengine.utils.workers.HttpWorker;
 
 import java.sql.Timestamp;
 import java.util.List;
 
 @Service
-public class SiteServiceImpl implements SiteService {
-
-    private final SiteRepository siteRepository;
+public class SiteServiceImpl extends AbstractEntityService<Site, SiteRepository>
+        implements SiteService {
 
     private final SitesList sitesList;
 
     @Autowired
-    public SiteServiceImpl(SiteRepository siteRepository, SitesList sitesList) {
-        this.siteRepository = siteRepository;
+    public SiteServiceImpl(SiteRepository repository, SitesList sitesList) {
+        super(repository);
         this.sitesList = sitesList;
     }
 
     @Override
     public Site save(searchengine.config.Site configSite) {
-        Site site = siteRepository.findByUrl(configSite.getUrl()).orElse(null);
+        Site site = repository.findByUrl(configSite.getUrl()).orElse(null);
 
         if (site == null) {
             site = new Site();
@@ -36,27 +36,22 @@ public class SiteServiceImpl implements SiteService {
         }
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
 
-        return siteRepository.save(site);
+        return repository.save(site);
     }
 
     @Override
     public Site getByUrl(String url) {
-        return siteRepository.findByUrl(url.replace("://www.", "://")).orElse(null);
+        return repository.findByUrl(url.replace("://www.", "://")).orElse(null);
     }
 
     @Override
     public List<Site> getAll() {
-        return (List<Site>) siteRepository.findAll();
-    }
-
-    @Override
-    public int getTotalCount() {
-        return (int) siteRepository.count();
+        return repository.findAll();
     }
 
     @Override
     public Site updateStatus(int id, SiteStatus status) {
-        siteRepository.updateStatus(status, id);
+        repository.updateStatus(status, id);
 
         return updateStatusTime(id);
     }
@@ -70,27 +65,17 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     public Site updateStatusTime(int id) {
-        siteRepository.updateStatusTime(id);
+        repository.updateStatusTime(id);
 
-        return siteRepository.findById(id).orElse(null);
+        return repository.findById(id).orElse(null);
     }
 
     @Override
     public Site updateLastError(int id, String lastError) {
-        siteRepository.updateLastError(lastError, id);
+        repository.updateLastError(lastError, id);
         updateStatus(id, SiteStatus.FAILED);
 
         return updateStatus(id, SiteStatus.FAILED);
-    }
-
-    @Override
-    public void deleteById(int id) {
-        siteRepository.deleteById(id);
-    }
-
-    @Override
-    public void deleteAll() {
-        siteRepository.deleteAllInBatch();
     }
 
     @Override

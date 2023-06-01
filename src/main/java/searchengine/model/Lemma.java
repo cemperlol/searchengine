@@ -9,14 +9,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "lemma")
-@Getter
-@Setter
-public class Lemma {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private int id;
+@Getter @Setter
+public class Lemma extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(name = "site_id", nullable = false)

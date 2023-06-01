@@ -6,15 +6,15 @@ import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.repositories.PageRepository;
+import searchengine.services.AbstractEntityService;
 
 @Service
-public class PageServiceImpl implements PageService {
-
-    private final PageRepository pageRepository;
-
+public class PageServiceImpl extends AbstractEntityService<Page, PageRepository>
+        implements PageService {
+    
     @Autowired
-    public PageServiceImpl(PageRepository pageRepository) {
-        this.pageRepository = pageRepository;
+    public PageServiceImpl(PageRepository repository) {
+        super(repository);
     }
 
     @Override
@@ -29,26 +29,11 @@ public class PageServiceImpl implements PageService {
             page.setContent(page.getCode() >= 400 ? "" : pageResponse.getResponseBody());
         }
 
-        return pageRepository.save(page);
-    }
-
-    @Override
-    public int getTotalCount() {
-        return (int) pageRepository.count();
+        return repository.save(page);
     }
 
     @Override
     public Page getByPathAndSiteId(String path, int siteId) {
-        return pageRepository.findByPathAndSiteId(path, siteId);
-    }
-
-    @Override
-    public void deleteById(int pageId) {
-        pageRepository.deleteById(pageId);
-    }
-
-    @Override
-    public void deleteAll() {
-        pageRepository.deleteAllInBatch();
+        return repository.findByPathAndSiteId(path, siteId);
     }
 }

@@ -12,12 +12,7 @@ import java.util.Set;
 @Table
 @Getter
 @Setter
-public class Site {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private int id;
+public class Site extends AbstractEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "ENUM('INDEXING','INDEXED','FAILED')", nullable = false)

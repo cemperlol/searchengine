@@ -11,12 +11,7 @@ import java.util.Set;
 @Table(name = "page")
 @Getter
 @Setter
-public class Page {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private int id;
+public class Page extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(name = "site_id", nullable = false)
