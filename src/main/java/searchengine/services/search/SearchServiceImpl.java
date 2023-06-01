@@ -1,7 +1,6 @@
 package searchengine.services.search;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.LastSearch;
 import searchengine.services.lemma.LemmaService;
@@ -112,12 +111,13 @@ public class SearchServiceImpl implements SearchService {
 
     private List<Lemma> getAscendingLemmasFromQuery(String query, Site site, int pageCount) {
         Set<String> lemmaValues = Lemmatizator.getLemmas(query).keySet();
-
-        return site.getLemmas().stream()
+        List<Lemma> lemmas = site.getLemmas().stream()
                 .filter(lemma -> lemmaValues.contains(lemma.getLemma()) &&
                         lemmaServiceImpl.filterTooFrequentLemmasOnSite(lemma, pageCount))
                 .sorted(Comparator.comparingInt(Lemma::getFrequency))
                 .toList();
+
+        return lemmas.size() == lemmaValues.size() ? lemmas : new ArrayList<>();
     }
 
     private List<Page> getPagesWithFullQuery(List<Lemma> lemmas, Site site) {

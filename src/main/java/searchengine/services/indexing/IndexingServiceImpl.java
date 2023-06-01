@@ -1,8 +1,8 @@
 package searchengine.services.indexing;
 
-import lombok.NoArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import searchengine.services.index.IndexService;
 import searchengine.services.lemma.LemmaService;
@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 @Service
-@NoArgsConstructor
 public class IndexingServiceImpl extends RecursiveTask<IndexingToggleResponse>
         implements IndexingService {
 
+    private static final int DELAY = 500;
     private static SiteService siteService;
 
     private static PageService pageService;
@@ -206,10 +206,8 @@ public class IndexingServiceImpl extends RecursiveTask<IndexingToggleResponse>
     }
 
     protected void executeDelay() {
-        if (Thread.interrupted()) return;
-
         try {
-            Thread.sleep(500);
+            Thread.sleep(DELAY);
         } catch (InterruptedException e) {
             ApplicationLogger.log(e);
         }
