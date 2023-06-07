@@ -15,10 +15,22 @@ import java.util.Optional;
 @Transactional
 public interface IndexRepository extends CommonEntityRepository<Index> {
 
+    default Index safeSave(Index index) {
+        Index dbIndex = findByLemmaAndPageIds(index.getLemma().getId(), index.getPage().getId()).orElse(null);
+
+        if(dbIndex == null) {
+            dbIndex = save(index);
+        } else {
+            updateRank(dbIndex.getId(), index.getRank());
+        }
+
+        return dbIndex;
+    }
+
     List<Index> findByPageId(@Param("pageId") int pageId);
 
     @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
-    Optional<Index> findByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
+    Optional<Index> findByLemmaAndPageIds(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
 
     @Modifying
     @Transactional
@@ -27,7 +39,7 @@ public interface IndexRepository extends CommonEntityRepository<Index> {
 
     @Modifying
     @Transactional
-    @Query("update Index i set i.rank = :rank where i.id = :id")
-    void updateRank(@Param("rank") float rank, @Param("id") int id);
+    @Query("update Index i set i.rank = i.rank + :rank where i.id = :id")
+    void updateRank(@Param("id") int id, @Param("rank") float rank);
 }
 

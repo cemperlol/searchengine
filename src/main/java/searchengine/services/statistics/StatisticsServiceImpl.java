@@ -2,35 +2,40 @@ package searchengine.services.statistics;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import searchengine.config.SitesList;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
-import searchengine.services.site.SiteService;
+import searchengine.repositories.SiteRepository;
+import searchengine.utils.workers.HttpWorker;
 
 import java.util.List;
 
 @Service
 public class StatisticsServiceImpl implements StatisticsService {
 
-    private final SiteService siteService;
+    private final SiteRepository siteRepository;
+
+    private final SitesList configSites;
     
     @Autowired
-    public StatisticsServiceImpl(SiteService siteService) {
-        this.siteService = siteService;
+    public StatisticsServiceImpl(SiteRepository siteRepository, SitesList configSites) {
+        this.siteRepository = siteRepository;
+        this.configSites = configSites;
     }
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics totalStatistics = new TotalStatistics();
-        totalStatistics.setSites(siteService.getConfigSites().size());
+        totalStatistics.setSites(configSites.getSites().size());
 
-        List<DetailedStatisticsItem> detailedStatistics = siteService.getConfigSites()
-                .stream()
+        List<DetailedStatisticsItem> detailedStatistics = configSites.getSites().stream()
                 .map(configSite -> {
-                    Site site = siteService.getByUrl(configSite.getUrl());
+                    Site site = siteRepository.findByUrl(HttpWorker.makeUrlWithoutWWW(configSite.getUrl()))
+                            .orElse(null);
                     DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
 
                     totalStatistics.setPages(totalStatistics.getPages() + item.getPages());

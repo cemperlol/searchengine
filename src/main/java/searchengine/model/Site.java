@@ -12,7 +12,12 @@ import java.util.Set;
 @Table
 @Getter
 @Setter
-public class Site extends AbstractEntity {
+public class Site {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
+    private int id;
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "ENUM('INDEXING','INDEXED','FAILED')", nullable = false)
@@ -30,9 +35,9 @@ public class Site extends AbstractEntity {
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "site")
+    @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
     private Set<Page> pages = new HashSet<>();
 
-    @OneToMany(mappedBy = "site")
+    @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
     private Set<Lemma> lemmas = new HashSet<>();
 }

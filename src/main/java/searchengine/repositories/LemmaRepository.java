@@ -13,6 +13,19 @@ import java.util.Optional;
 @Transactional
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {
 
+    default Lemma safeSave(Lemma lemma) {
+        Lemma dbLemma = findByLemmaAndSiteId(lemma.getLemma(), lemma.getSite().getId())
+                .orElse(null);
+
+        if (dbLemma == null) {
+            dbLemma = save(lemma);
+        } else {
+            updateFrequencyById(dbLemma.getId(), lemma.getFrequency());
+        }
+
+        return dbLemma;
+    }
+
     @Query("select l from Lemma l where l.lemma = :lemmaValue and l.site.id = :siteId")
     Optional<Lemma> findByLemmaAndSiteId(@Param("lemmaValue") String lemmaValue,
                                         @Param("siteId") int siteId);

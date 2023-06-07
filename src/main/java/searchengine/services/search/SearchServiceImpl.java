@@ -3,9 +3,7 @@ package searchengine.services.search;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.LastSearch;
-import searchengine.services.lemma.LemmaService;
-import searchengine.services.page.PageService;
-import searchengine.services.site.SiteService;
+import searchengine.repositories.SiteRepository;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.model.*;
@@ -20,20 +18,13 @@ import java.util.*;
 @Service
 public class SearchServiceImpl implements SearchService {
 
-    private final SiteService siteServiceImpl;
-
-    private final PageService pageServiceImpl;
-
-    private final LemmaService lemmaServiceImpl;
+    private final SiteRepository siteRepository;
 
     private float absRelevance = -1.0f;
 
     @Autowired
-    public SearchServiceImpl(SiteService siteServiceImpl, PageService pageServiceImpl,
-                             LemmaService lemmaServiceImpl) {
-        this.siteServiceImpl = siteServiceImpl;
-        this.pageServiceImpl = pageServiceImpl;
-        this.lemmaServiceImpl = lemmaServiceImpl;
+    public SearchServiceImpl(SiteRepository siteRepository) {
+        this.siteRepository = siteRepository;
     }
 
     @Override
@@ -58,10 +49,10 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private SearchResponse siteSearch(String query, String siteUrl) {
-        Site site = siteServiceImpl.getByUrl(siteUrl);
+        Site site = siteRepository.findByUrl(siteUrl).orElse(null);
         if (site == null || site.getStatus() == SiteStatus.INDEXING)
             return SearchResponseGenerator.siteNotIndexed();
-        int pageCount = pageServiceImpl.getTotalCount();
+        int pageCount = site.getPages().size();
 
         List<Lemma> lemmas = getAscendingLemmasFromQuery(query, site, pageCount);
         List<Page> pages = getPagesWithFullQuery(lemmas, site);
@@ -78,7 +69,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private SearchResponse globalSearch(String query) {
-        List<Site> sites = siteServiceImpl.getAll().stream()
+        List<Site> sites = siteRepository.findAll().stream()
                 .filter(site -> site.getStatus() != SiteStatus.INDEXING)
                 .toList();
 
@@ -98,12 +89,11 @@ public class SearchServiceImpl implements SearchService {
     private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
         sitesResponses.forEach(response ->
             Arrays.stream(response.getData()).forEach(result -> {
-                Site site = siteServiceImpl.getByUrl(result.getSite());
+                Site site = siteRepository.findByUrl(result.getSite()).get();
                 Set<Index> indexes = site.getPages().stream()
-                        .filter(sitePage -> sitePage.getPath().equals(result.getUri()))
+                        .filter(sitesPage -> sitesPage.getPath().equals(result.getUri()))
                         .findFirst().get().getIndexes();
-                result.setRelevance(RelevanceWorker
-                        .getRelRelevance(indexes, absRelevance));
+                result.setRelevance(RelevanceWorker.getRelRelevance(indexes, absRelevance));
             }));
 
         return sitesResponses;
@@ -113,11 +103,16 @@ public class SearchServiceImpl implements SearchService {
         Set<String> lemmaValues = Lemmatizator.getLemmas(query).keySet();
         List<Lemma> lemmas = site.getLemmas().stream()
                 .filter(lemma -> lemmaValues.contains(lemma.getLemma()) &&
-                        lemmaServiceImpl.filterTooFrequentLemmasOnSite(lemma, pageCount))
+                        filterTooFrequentLemmasOnSite(lemma, pageCount))
                 .sorted(Comparator.comparingInt(Lemma::getFrequency))
                 .toList();
 
         return lemmas.size() == lemmaValues.size() ? lemmas : new ArrayList<>();
+    }
+
+    private boolean filterTooFrequentLemmasOnSite(Lemma lemma, int pageCount) {
+        if (pageCount < 10) return true;
+        return (float) lemma.getFrequency() / pageCount < 0.25;
     }
 
     private List<Page> getPagesWithFullQuery(List<Lemma> lemmas, Site site) {

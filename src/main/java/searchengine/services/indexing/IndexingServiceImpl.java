@@ -15,6 +15,7 @@ import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +66,12 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                 .map(s -> {
                     Site site = new Site();
                     site.setStatus(SiteStatus.INDEXING);
-                    site.setUrl(HttpWorker.makeUrlWithoutSlashEnd(HttpWorker.makeUrlWithoutWWW(s.getUrl())));
+                    site.setStatusTime(new Timestamp(System.currentTimeMillis()));
+                    site.setUrl(HttpWorker.makeUrlWithoutWWW(s.getUrl()));
                     site.setName(s.getName());
+                    siteRepository.save(site);
 
-                    return new WebsiteParser(siteRepository.save(site),
-                            HttpWorker.makeUrlWithSlashEnd(site.getUrl()));
+                    return new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(site.getUrl()));
                 }).toList();
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
@@ -85,7 +87,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
             siteRepository.updateLastError(siteId, result.getError());
         }
 
-        if (POOL.getActiveThreadCount() == 0) {
+        if (POOL.getActiveThreadCount() == 0 && POOL.isTerminating()) {
             WebsiteParser.setParsingStopped(true);
             WebsiteParser.unsubscribe(this);
         }
@@ -97,7 +99,8 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
         WebsiteParser.setParsingStopped(true);
         WebsiteParser.unsubscribe(this);
-        siteRepository.findAll()
+        siteRepository.findAll().stream()
+                .filter(site -> site.getStatus().equals(SiteStatus.INDEXING))
                 .forEach(site -> siteRepository.updateLastError(site.getId(), "User stopped indexing"));
 
         return IndexingResponseGenerator.successResponse();
@@ -155,7 +158,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     public void update(ParsingTaskResult result) {
         siteRepository.updateStatusTime(result.getSite().getId());
         pageRepository.save(result.getPage());
-        lemmaRepository.saveAll(result.getLemmas());
-        indexRepository.saveAll(result.getIndexes());
+        result.getLemmas().forEach(lemmaRepository::safeSave);
+        result.getIndexes().forEach(indexRepository::safeSave);
     }
 }

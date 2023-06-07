@@ -32,7 +32,7 @@ public class ParsingTaskResultHandler {
 
     private IndexingStatusResponse processTasks() {
         futureTasks = new ArrayList<>();
-        tasks.forEach(t -> futureTasks.add(CompletableFuture.supplyAsync(t::fork)));
+        tasks.forEach(t -> futureTasks.add(CompletableFuture.supplyAsync(t::fork, forkJoinPool)));
 
         CompletableFuture<Void> completedTasks = waitForTasksToComplete();
         if (WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.userStoppedIndexing();

@@ -19,7 +19,6 @@ import searchengine.utils.workers.HttpWorker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -77,7 +76,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
         pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
         if (site.getPages().stream().anyMatch(page -> page.getPath().equals(pageUrl)))
-            IndexingResponseGenerator.successResponse();
+            return IndexingResponseGenerator.successResponse();
 
         executeDelay();
 
@@ -97,6 +96,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         Page page = createPage(pageResponse);
 
         result.setPage(page);
+        site.getPages().add(page);
         if (page.getContent().equals("")) return null;
 
         Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
@@ -118,26 +118,25 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     protected void saveLemmasAndIndexes(Page page, Document doc) {
         Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
 
-        List<Lemma> lemmas = createLemmas(page, lemmasAndFrequency);
+        List<Lemma> lemmas = createLemmas(lemmasAndFrequency);
         List<Integer> ranks = lemmasAndFrequency.values().stream().toList();
 
         result.setLemmas(lemmas);
         result.setIndexes(createIndexes(page, lemmas, ranks));
+        site.getLemmas().addAll(lemmas);
     }
 
-    private List<Lemma> createLemmas(Page page, Map<String, Integer> lemmasAndFrequency) {
-        Set<Lemma> pageLemmas = page.getPageLemmas();
+    private List<Lemma> createLemmas(Map<String, Integer> lemmasAndFrequency) {
         List<Lemma> lemmas = new ArrayList<>();
-        lemmasAndFrequency.forEach((l, f) -> lemmas.add(createLemma(pageLemmas, l, f)));
+        lemmasAndFrequency.forEach((l, f) -> lemmas.add(createLemma(l, f)));
 
         return lemmas;
     }
 
-    private Lemma createLemma(Set<Lemma> pageLemmas, String lemmaValue, int frequency) {
-        Lemma lemma = pageLemmas.stream()
+    private Lemma createLemma(String lemmaValue, int frequency) {
+        Lemma lemma = site.getLemmas().stream()
                 .filter(l -> l.getLemma().equals(lemmaValue))
-                .findFirst()
-                .orElse(null);
+                .findFirst().orElse(null);
 
         if (lemma != null) {
             lemma.setFrequency(lemma.getFrequency() + frequency);
@@ -146,6 +145,8 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
             lemma.setSite(site);
             lemma.setLemma(lemmaValue);
             lemma.setFrequency(frequency);
+
+            site.getLemmas().add(lemma);
         }
 
         return lemma;
@@ -173,8 +174,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
                 .stream()
                 .distinct()
                 .filter(u -> sitePattern.matcher(HttpWorker.makeUrlWithoutWWW(u)).find()
-                        && !u.contains("#") && !u.contains("?")
-                        && site.getPages().stream().noneMatch(page -> page.getPath().equals(pageUrl)))
+                        && !u.contains("#") && !u.contains("?"))
                 .map(u -> new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(u)))
                 .toList();
     }
