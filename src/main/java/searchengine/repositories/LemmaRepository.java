@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {
 
     @Query("select l from Lemma l where l.lemma = :lemmaValue and l.site.id = :siteId")
-    Optional<Lemma> getByLemmaAndSiteId(@Param("lemmaValue") String lemmaValue,
+    Optional<Lemma> findByLemmaAndSiteId(@Param("lemmaValue") String lemmaValue,
                                         @Param("siteId") int siteId);
 
     @Modifying

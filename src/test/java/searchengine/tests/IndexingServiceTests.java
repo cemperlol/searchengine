@@ -3,7 +3,7 @@ package searchengine.tests;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import searchengine.dto.indexing.IndexingToggleResponse;
+import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.services.indexing.IndexingService;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 
@@ -18,23 +18,23 @@ public class IndexingServiceTests {
 
     @Test
     public void testIndexingStart() {
-        IndexingToggleResponse response = IndexingResponseGenerator.successResponse();
+        IndexingStatusResponse response = IndexingResponseGenerator.successResponse();
 
         when(service.startIndexing()).thenReturn(response);
 
-        IndexingToggleResponse actual = service.startIndexing();
+        IndexingStatusResponse actual = service.startIndexing();
 
         assertTrue(actual.isResult());
     }
 
     @Test
     public void testIncorrectIndexingStart() {
-        IndexingToggleResponse response = IndexingResponseGenerator.indexingAlreadyStarted();
+        IndexingStatusResponse response = IndexingResponseGenerator.indexingAlreadyStarted();
 
         when(service.startIndexing()).thenReturn(response);
 
-        IndexingToggleResponse expected = IndexingResponseGenerator.indexingAlreadyStarted();
-        IndexingToggleResponse actual = service.startIndexing();
+        IndexingStatusResponse expected = IndexingResponseGenerator.indexingAlreadyStarted();
+        IndexingStatusResponse actual = service.startIndexing();
 
         assertFalse(actual.isResult());
         assertEquals(expected.getError(), actual.getError());
@@ -42,23 +42,23 @@ public class IndexingServiceTests {
 
     @Test
     public void testStopIndexing() {
-        IndexingToggleResponse response = IndexingResponseGenerator.successResponse();
+        IndexingStatusResponse response = IndexingResponseGenerator.successResponse();
 
         when(service.stopIndexing()).thenReturn(response);
 
-        IndexingToggleResponse actual = service.stopIndexing();
+        IndexingStatusResponse actual = service.stopIndexing();
 
         assertTrue(actual.isResult());
     }
 
     @Test
     public void testIncorrectStopIndexing() {
-        IndexingToggleResponse response = IndexingResponseGenerator.noIndexingRunning();
+        IndexingStatusResponse response = IndexingResponseGenerator.noIndexingRunning();
 
         when(service.stopIndexing()).thenReturn(response);
 
-        IndexingToggleResponse expected = IndexingResponseGenerator.noIndexingRunning();
-        IndexingToggleResponse actual = service.stopIndexing();
+        IndexingStatusResponse expected = IndexingResponseGenerator.noIndexingRunning();
+        IndexingStatusResponse actual = service.stopIndexing();
 
         assertFalse(actual.isResult());
         assertEquals(expected.getError(), actual.getError());
@@ -67,11 +67,11 @@ public class IndexingServiceTests {
     @Test
     public void testIndexPage() {
         String url = "https://handmadebarbers.ru/";
-        IndexingToggleResponse response = IndexingResponseGenerator.successResponse();
+        IndexingStatusResponse response = IndexingResponseGenerator.successResponse();
 
         when(service.indexPage(url)).thenReturn(response);
 
-        IndexingToggleResponse actual = service.indexPage(url);
+        IndexingStatusResponse actual = service.indexPage(url);
 
         assertTrue(actual.isResult());
     }
@@ -79,12 +79,12 @@ public class IndexingServiceTests {
     @Test
     public void testIncorrectUrlIndexPage() {
         String url = "y96yuoglh9s7h";
-        IndexingToggleResponse response = IndexingResponseGenerator.siteNotAdded();
+        IndexingStatusResponse response = IndexingResponseGenerator.siteNotAdded();
 
         when(service.indexPage(url)).thenReturn(response);
 
-        IndexingToggleResponse expected = IndexingResponseGenerator.siteNotAdded();
-        IndexingToggleResponse actual = service.indexPage(url);
+        IndexingStatusResponse expected = IndexingResponseGenerator.siteNotAdded();
+        IndexingStatusResponse actual = service.indexPage(url);
 
         assertFalse(actual.isResult());
         assertEquals(expected.getError(), actual.getError());

@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 import searchengine.repositories.LemmaRepository;
-import searchengine.services.AbstractEntityService;
 
 import java.util.Collection;
 import java.util.List;

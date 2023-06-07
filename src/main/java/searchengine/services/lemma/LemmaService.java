@@ -1,6 +1,5 @@
 package searchengine.services.lemma;
 
-import searchengine.services.CommonEntityService;
 import searchengine.model.Lemma;
 import searchengine.model.Site;
 

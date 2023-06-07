@@ -3,7 +3,6 @@ package searchengine.services.index;
 import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
-import searchengine.services.CommonEntityService;
 
 import java.util.List;
 

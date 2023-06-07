@@ -1,42 +1,42 @@
 package searchengine.utils.responseGenerators;
 
-import searchengine.dto.indexing.IndexingToggleResponse;
+import searchengine.dto.indexing.IndexingStatusResponse;
 
 public class IndexingResponseGenerator {
 
-    public static IndexingToggleResponse successResponse() {
-        return new IndexingToggleResponse(true);
+    public static IndexingStatusResponse successResponse() {
+        return new IndexingStatusResponse(true);
     }
 
-    public static IndexingToggleResponse createFailureResponse(String errorMsg) {
-        return new IndexingToggleResponse(false, errorMsg);
+    public static IndexingStatusResponse createFailureResponse(String errorMsg) {
+        return new IndexingStatusResponse(false, errorMsg);
     }
 
-    public static IndexingToggleResponse siteNotAdded() {
+    public static IndexingStatusResponse siteNotAdded() {
         return createFailureResponse("This website was not added to the site list");
     }
 
-    public static IndexingToggleResponse contentUnavailable(String fullUrl) {
+    public static IndexingStatusResponse contentUnavailable(String fullUrl) {
         return createFailureResponse("Failed to index page, " + fullUrl + " content unavailable");
     }
 
-    public static IndexingToggleResponse noIndexingRunning() {
+    public static IndexingStatusResponse noIndexingRunning() {
         return createFailureResponse("No indexing is running");
     }
 
-    public static IndexingToggleResponse indexingAlreadyStarted() {
+    public static IndexingStatusResponse indexingAlreadyStarted() {
         return createFailureResponse("Indexing already started");
     }
 
-    public static IndexingToggleResponse userStoppedIndexing() {
+    public static IndexingStatusResponse userStoppedIndexing() {
         return createFailureResponse("User stopped indexing");
     }
 
-    public static IndexingToggleResponse failedToCompleteIndexingTasks() {
+    public static IndexingStatusResponse failedToCompleteIndexingTasks() {
         return createFailureResponse("Failed to complete indexing tasks");
     }
 
-    public static IndexingToggleResponse failedToGetIndexingTasksResult() {
+    public static IndexingStatusResponse failedToGetIndexingTasksResult() {
         return createFailureResponse("Failed to get indexing tasks result");
     }
 }

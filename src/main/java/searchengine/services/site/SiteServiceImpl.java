@@ -6,7 +6,6 @@ import searchengine.config.SitesList;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 import searchengine.repositories.SiteRepository;
-import searchengine.services.AbstractEntityService;
 import searchengine.utils.workers.HttpWorker;
 
 import java.sql.Timestamp;

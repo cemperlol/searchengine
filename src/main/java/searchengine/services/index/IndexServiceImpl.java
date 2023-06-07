@@ -6,7 +6,6 @@ import searchengine.model.Index;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.repositories.IndexRepository;
-import searchengine.services.AbstractEntityService;
 
 import java.util.List;
 import java.util.Objects;

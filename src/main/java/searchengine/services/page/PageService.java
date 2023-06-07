@@ -1,6 +1,5 @@
 package searchengine.services.page;
 
-import searchengine.services.CommonEntityService;
 import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
 import searchengine.model.Site;

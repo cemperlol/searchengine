@@ -6,7 +6,6 @@ import searchengine.dto.page.PageResponse;
 import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.repositories.PageRepository;
-import searchengine.services.AbstractEntityService;
 
 @Service
 public class PageServiceImpl extends AbstractEntityService<Page, PageRepository>

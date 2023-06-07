@@ -1,6 +1,5 @@
 package searchengine.services.site;
 
-import searchengine.services.CommonEntityService;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 

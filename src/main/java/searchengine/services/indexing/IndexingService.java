@@ -1,16 +1,12 @@
 package searchengine.services.indexing;
 
-import searchengine.dto.indexing.IndexingToggleResponse;
+import searchengine.dto.indexing.IndexingStatusResponse;
 
 public interface IndexingService {
 
-    IndexingToggleResponse startIndexing();
+    IndexingStatusResponse startIndexing();
 
-    IndexingToggleResponse stopIndexing();
+    IndexingStatusResponse stopIndexing();
 
-    IndexingToggleResponse compute();
-
-    IndexingToggleResponse indexPage(String url);
-
-    boolean getIndexingStopped();
+    IndexingStatusResponse indexPage(String url);
 }

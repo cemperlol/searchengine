@@ -1,8 +1,8 @@
 package searchengine.utils.handlers;
 
 import lombok.RequiredArgsConstructor;
-import searchengine.dto.indexing.IndexingToggleResponse;
-import searchengine.services.indexing.IndexingService;
+import searchengine.dto.indexing.IndexingStatusResponse;
+import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 
 import java.util.ArrayList;
@@ -11,17 +11,18 @@ import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
 @RequiredArgsConstructor
-public class IndexingTaskResultHandler {
+public class ParsingTaskResultHandler {
 
-    private List<CompletableFuture<IndexingToggleResponse>> futureTasks;
+    private List<CompletableFuture<ForkJoinTask<IndexingStatusResponse>>> futureTasks;
 
     private final ForkJoinPool forkJoinPool = new ForkJoinPool();
 
-    private final List<IndexingService> tasks;
+    private final List<WebsiteParser> tasks;
 
-    public IndexingToggleResponse handleTasksResult() {
+    public IndexingStatusResponse handleTasksResult() {
         try {
             return processTasks();
         } finally {
@@ -29,22 +30,21 @@ public class IndexingTaskResultHandler {
         }
     }
 
-    private IndexingToggleResponse processTasks() {
+    private IndexingStatusResponse processTasks() {
         futureTasks = new ArrayList<>();
-        tasks.forEach(t -> futureTasks.add(CompletableFuture.supplyAsync(t::compute, forkJoinPool)));
+        tasks.forEach(t -> futureTasks.add(CompletableFuture.supplyAsync(t::fork)));
 
         CompletableFuture<Void> completedTasks = waitForTasksToComplete();
-        if (tasks.stream().anyMatch(IndexingService::getIndexingStopped))
-            return IndexingResponseGenerator.userStoppedIndexing();
+        if (WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.userStoppedIndexing();
         if (completedTasks == null) return IndexingResponseGenerator.failedToCompleteIndexingTasks();
 
-        List<IndexingToggleResponse> results = getTasksResult();
+        List<IndexingStatusResponse> results = getTasksResult();
         if (results == null) return IndexingResponseGenerator.failedToGetIndexingTasksResult();
 
-        if (results.stream().anyMatch(IndexingToggleResponse::isResult))
+        if (results.stream().anyMatch(IndexingStatusResponse::isResult))
             return IndexingResponseGenerator.successResponse();
 
-        StringJoiner totalError = new StringJoiner(", ");
+        StringJoiner totalError = new StringJoiner(", " + System.lineSeparator());
         results.forEach(r -> {
             if (!r.isResult()) totalError.add(r.getError());
         });
@@ -64,12 +64,12 @@ public class IndexingTaskResultHandler {
         return completedTasks;
     }
 
-    private List<IndexingToggleResponse> getTasksResult() {
-        List<IndexingToggleResponse> results = new ArrayList<>();
+    private List<IndexingStatusResponse> getTasksResult() {
+        List<IndexingStatusResponse> results = new ArrayList<>();
 
-        for (CompletableFuture<IndexingToggleResponse> task : futureTasks) {
+        for (CompletableFuture<ForkJoinTask<IndexingStatusResponse>> task : futureTasks) {
             try {
-                results.add(task.get());
+                results.add(task.join().get());
             } catch (InterruptedException | ExecutionException e) {
                 return null;
             }

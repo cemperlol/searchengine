@@ -3,7 +3,7 @@ package searchengine.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import searchengine.dto.indexing.IndexingToggleResponse;
+import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.indexing.IndexingService;
@@ -34,17 +34,17 @@ public class ApiController {
     }
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<IndexingToggleResponse> startIndexing() {
+    public ResponseEntity<IndexingStatusResponse> startIndexing() {
         return ResponseEntity.ok(indexingService.startIndexing());
     }
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<IndexingToggleResponse> stopIndexing() {
+    public ResponseEntity<IndexingStatusResponse> stopIndexing() {
         return ResponseEntity.ok(indexingService.stopIndexing());
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<IndexingToggleResponse> indexPage(@RequestParam String url) {
+    public ResponseEntity<IndexingStatusResponse> indexPage(@RequestParam String url) {
         return ResponseEntity.ok(indexingService.indexPage(url));
     }
 

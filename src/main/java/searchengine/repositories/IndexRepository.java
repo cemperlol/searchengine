@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Index;
+import searchengine.model.Lemma;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,16 +15,15 @@ import java.util.Optional;
 @Transactional
 public interface IndexRepository extends CommonEntityRepository<Index> {
 
+    List<Index> findByPageId(@Param("pageId") int pageId);
+
+    @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
+    Optional<Index> findByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
+
     @Modifying
     @Transactional
     @Query("delete from Index i where i.page.id = :pageId")
     void deleteByPageId(@Param("pageId") int pageId);
-
-    @Query("select i from Index i where i.page.id = :pageId")
-    List<Index> getByPageId(@Param("pageId") int pageId);
-
-    @Query("select i from Index i where i.lemma.id = :lemmaId and i.page.id = :pageId")
-    Optional<Index> getByLemmaAndPageId(@Param("lemmaId") int lemmaId, @Param("pageId") int pageId);
 
     @Modifying
     @Transactional

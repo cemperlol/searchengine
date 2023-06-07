@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class IndexingToggleResponse {
+public class IndexingStatusResponse {
 
     private final boolean result;
 
