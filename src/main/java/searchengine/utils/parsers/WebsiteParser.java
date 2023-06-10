@@ -3,10 +3,7 @@ package searchengine.utils.parsers;
 import org.jsoup.nodes.Document;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.dto.page.PageResponse;
-import searchengine.dto.parsing.ParsingTaskResult;
 import searchengine.logging.ApplicationLogger;
-import searchengine.model.Index;
-import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.services.ParsingSubscriber;
@@ -22,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
@@ -36,8 +32,6 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
     private String pageUrl;
 
-    private final ParsingTaskResult result;
-
     static {
         parsingStopped = new AtomicBoolean(true);
         subscribers = new ArrayList<>();
@@ -46,8 +40,6 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     public WebsiteParser(Site site, String pageUrl) {
         this.site = site;
         this.pageUrl = pageUrl;
-        this.result = new ParsingTaskResult();
-        result.setSite(site);
     }
 
     public static void subscribe(ParsingSubscriber subscriber) {
@@ -83,8 +75,6 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         Document doc = savePageInfoAndGetDocument();
         if (doc == null) return IndexingResponseGenerator.contentUnavailable(pageUrl);
 
-        notifySubscribers();
-
         return new ParsingTaskResultHandler(new ArrayList<>(createSubtasks(doc))).handleTasksResult();
     }
 
@@ -94,13 +84,16 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         pageResponse.setPath(pageUrl);
 
         Page page = createPage(pageResponse);
-
-        result.setPage(page);
         site.getPages().add(page);
-        if (page.getContent().equals("")) return null;
 
-        Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
-        saveLemmasAndIndexes(page, doc);
+        Document doc = null;
+        Map<String, Integer> lemmasAndFrequency = null;
+        if (!page.getContent().equals("")) {
+            doc = HtmlWorker.parsePage(pageResponse.getResponse());
+            lemmasAndFrequency = Lemmatizator.getLemmas(doc);
+        }
+
+        notifySubscribers(site, page, lemmasAndFrequency);
 
         return doc;
     }
@@ -115,72 +108,22 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         return page;
     }
 
-    protected void saveLemmasAndIndexes(Page page, Document doc) {
-        Map<String, Integer> lemmasAndFrequency = Lemmatizator.getLemmas(doc);
-
-        List<Lemma> lemmas = createLemmas(lemmasAndFrequency);
-        List<Integer> ranks = lemmasAndFrequency.values().stream().toList();
-
-        result.setLemmas(lemmas);
-        result.setIndexes(createIndexes(page, lemmas, ranks));
-        site.getLemmas().addAll(lemmas);
-    }
-
-    private List<Lemma> createLemmas(Map<String, Integer> lemmasAndFrequency) {
-        List<Lemma> lemmas = new ArrayList<>();
-        lemmasAndFrequency.forEach((l, f) -> lemmas.add(createLemma(l, f)));
-
-        return lemmas;
-    }
-
-    private Lemma createLemma(String lemmaValue, int frequency) {
-        Lemma lemma = site.getLemmas().stream()
-                .filter(l -> l.getLemma().equals(lemmaValue))
-                .findFirst().orElse(null);
-
-        if (lemma != null) {
-            lemma.setFrequency(lemma.getFrequency() + frequency);
-        } else {
-            lemma = new Lemma();
-            lemma.setSite(site);
-            lemma.setLemma(lemmaValue);
-            lemma.setFrequency(frequency);
-
-            site.getLemmas().add(lemma);
-        }
-
-        return lemma;
-    }
-
-    private List<Index> createIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
-        return IntStream.range(0, lemmas.size())
-                .mapToObj(i -> createIndex(page, lemmas.get(i), ranks.get(i)))
-                .toList();
-    }
-
-    private Index createIndex(Page page, Lemma lemma, int rank) {
-        Index index = new Index();
-        index.setPage(page);
-        index.setLemma(lemma);
-        index.setRank(rank);
-
-        return index;
-    }
-
     protected List<WebsiteParser> createSubtasks(Document doc) {
         Pattern sitePattern = Pattern.compile(site.getUrl());
+        List<WebsiteParser> subtasks = new ArrayList<>();
 
-        return doc.select("a").eachAttr("abs:href")
-                .stream()
-                .distinct()
-                .filter(u -> sitePattern.matcher(HttpWorker.makeUrlWithoutWWW(u)).find()
-                        && !u.contains("#") && !u.contains("?"))
-                .map(u -> new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(u)))
-                .toList();
+        for (String u : doc.select("a").eachAttr("abs:href")) {
+            if (sitePattern.matcher(HttpWorker.makeUrlWithoutWWW(u)).find()
+                    && !u.contains("#") && !u.contains("?")) {
+                subtasks.add(new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(u)));
+            }
+        }
+
+        return subtasks;
     }
 
-    protected void notifySubscribers() {
-        subscribers.forEach(s -> s.update(result));
+    protected void notifySubscribers(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
+        subscribers.forEach(s -> s.update(site, page, lemmasAndFrequency));
     }
 
     protected void executeDelay() {

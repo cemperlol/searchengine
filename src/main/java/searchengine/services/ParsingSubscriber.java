@@ -1,7 +1,10 @@
 package searchengine.services;
 
-import searchengine.dto.parsing.ParsingTaskResult;
+import searchengine.model.Page;
+import searchengine.model.Site;
+
+import java.util.Map;
 
 public interface ParsingSubscriber {
-    void update(ParsingTaskResult result);
+    void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency);
 }

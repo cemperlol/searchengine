@@ -1,12 +1,10 @@
 package searchengine.dto.parsing;
 
 import lombok.Data;
-import searchengine.model.Index;
-import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.Site;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 public class ParsingTaskResult {
@@ -15,7 +13,5 @@ public class ParsingTaskResult {
 
     private Page page;
 
-    private List<Lemma> lemmas;
-
-    private List<Index> indexes;
+    private Map<String, Integer> lemmasAndFrequency;
 }

@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,7 +37,7 @@ public class Site {
     private String name;
 
     @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
-    private Set<Page> pages = new HashSet<>();
+    private Set<Page> pages = Collections.synchronizedSet(new HashSet<>());
 
     @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
     private Set<Lemma> lemmas = new HashSet<>();

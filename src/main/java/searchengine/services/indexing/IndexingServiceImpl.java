@@ -3,7 +3,6 @@ package searchengine.services.indexing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
-import searchengine.dto.parsing.ParsingTaskResult;
 import searchengine.model.*;
 import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
@@ -16,11 +15,10 @@ import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
 
 import java.sql.Timestamp;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 
 @Service
 public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
@@ -121,15 +119,14 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
         clearTablesBeforeIndexPage(site, pageUrl);
 
-
         siteRepository.updateStatusTime(site.getId());
     }
 
     private void clearTablesBeforeStartIndexing() {
-        indexRepository.deleteAll();
-        lemmaRepository.deleteAll();
-        pageRepository.deleteAll();
-        siteRepository.deleteAll();
+        indexRepository.deleteAllInBatch();
+        lemmaRepository.deleteAllInBatch();
+        pageRepository.deleteAllInBatch();
+        siteRepository.deleteAllInBatch();
     }
 
     private void clearTablesBeforeIndexPage(Site site, String pageUrl) {
@@ -155,10 +152,82 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     @Override
-    public void update(ParsingTaskResult result) {
-        siteRepository.updateStatusTime(result.getSite().getId());
-        pageRepository.save(result.getPage());
-        result.getLemmas().forEach(lemmaRepository::safeSave);
-        result.getIndexes().forEach(indexRepository::safeSave);
+    public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
+        if (site.getPages().stream().anyMatch(sitePage -> sitePage.getPath().equals(page.getPath()))) return;
+        siteRepository.updateStatusTime(site.getId());
+        synchronized (pageRepository) {
+            try {
+                site.getPages().add(pageRepository.save(page));
+            } catch (Exception e) {
+                return;
+            }
+        }
+        saveLemmasAndIndexes(site, page, lemmasAndFrequency);
+    }
+
+    private void saveLemmasAndIndexes(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
+        if (lemmasAndFrequency == null) return;
+        saveIndexes(page, saveLemmas(site, lemmasAndFrequency.keySet()),
+                lemmasAndFrequency.values().stream().toList());
+    }
+
+    private List<Lemma> saveLemmas(Site site, Collection<String> lemmaValues) {
+        List<Lemma> lemmas = new ArrayList<>();
+
+        for (String lemmaValue : lemmaValues) {
+            Lemma lemma = site.getLemmas().stream()
+                    .filter(siteLemma -> siteLemma.getLemma().equals(lemmaValue))
+                    .findFirst().orElse(null);
+
+            if (lemma == null) {
+                lemma = new Lemma();
+                lemma.setSite(site);
+                lemma.setLemma(lemmaValue);
+                lemma.setFrequency(1);
+            } else {
+                lemma.setFrequency(lemma.getFrequency() + 1);
+            }
+
+            try {
+                lemmaRepository.save(lemma);
+            } catch (Exception e) {
+                lemmaRepository.updateFrequencyById(lemma.getId(), lemma.getFrequency());
+            }
+
+            lemmas.add(lemma);
+        }
+
+        site.getLemmas().addAll(lemmas);
+        return lemmas;
+    }
+
+    private void saveIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
+        List<Index> indexes = new ArrayList<>();
+
+        IntStream.range(0, lemmas.size()).forEach(i -> {
+            int rank = ranks.get(i);
+            Lemma lemma = lemmas.get(i);
+            Index index = indexes.stream()
+                    .filter(pageIndex -> pageIndex.getPage().getId() == page.getId()
+                            && pageIndex.getLemma().getLemma().equals(lemma.getLemma()))
+                    .findFirst().orElse(null);
+
+            if (index == null) {
+                index = new Index();
+                index.setPage(page);
+                index.setLemma(lemma);
+                index.setRank(rank);
+            } else {
+                index.setRank(index.getRank() + rank);
+            }
+
+            try {
+                indexRepository.save(index);
+            } catch (Exception e) {
+                indexRepository.updateRank(index.getId(), index.getRank());
+            }
+
+            indexes.add(index);
+        });
     }
 }
