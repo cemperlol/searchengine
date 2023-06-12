@@ -37,7 +37,7 @@ public class Site {
     private String name;
 
     @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
-    private Set<Page> pages = Collections.synchronizedSet(new HashSet<>());
+    private Set<Page> pages = new HashSet<>();
 
     @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
     private Set<Lemma> lemmas = new HashSet<>();

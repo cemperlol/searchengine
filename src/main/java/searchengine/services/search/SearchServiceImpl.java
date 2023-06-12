@@ -49,7 +49,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private SearchResponse siteSearch(String query, String siteUrl) {
-        Site site = siteRepository.findByUrl(siteUrl).orElse(null);
+        Site site = siteRepository.findByUrl(siteUrl);
         if (site == null || site.getStatus() == SiteStatus.INDEXING)
             return SearchResponseGenerator.siteNotIndexed();
         int pageCount = site.getPages().size();
@@ -89,7 +89,7 @@ public class SearchServiceImpl implements SearchService {
     private List<SearchResponse> calculateGlobalSearchResponsesRelevance(List<SearchResponse> sitesResponses) {
         sitesResponses.forEach(response ->
             Arrays.stream(response.getData()).forEach(result -> {
-                Site site = siteRepository.findByUrl(result.getSite()).get();
+                Site site = siteRepository.findByUrl(result.getSite());
                 Set<Index> indexes = site.getPages().stream()
                         .filter(sitesPage -> sitesPage.getPath().equals(result.getUri()))
                         .findFirst().get().getIndexes();

@@ -7,4 +7,6 @@ import java.util.Map;
 
 public interface ParsingSubscriber {
     void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency);
+
+    boolean checkPageExistence(Site site, String path);
 }

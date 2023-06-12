@@ -34,8 +34,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<DetailedStatisticsItem> detailedStatistics = configSites.getSites().stream()
                 .map(configSite -> {
-                    Site site = siteRepository.findByUrl(HttpWorker.makeUrlWithoutWWW(configSite.getUrl()))
-                            .orElse(null);
+                    Site site = siteRepository.findByUrl(HttpWorker.makeUrlWithoutWWW(configSite.getUrl()));
                     DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
 
                     totalStatistics.setPages(totalStatistics.getPages() + item.getPages());

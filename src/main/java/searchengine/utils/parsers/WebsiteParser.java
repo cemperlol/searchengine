@@ -67,7 +67,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         if (parsingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
 
         pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
-        if (site.getPages().stream().anyMatch(page -> page.getPath().equals(pageUrl)))
+        if (subscribers.stream().anyMatch(s -> s.checkPageExistence(site, pageUrl)))
             return IndexingResponseGenerator.successResponse();
 
         executeDelay();
@@ -78,14 +78,19 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         return new ParsingTaskResultHandler(new ArrayList<>(createSubtasks(doc))).handleTasksResult();
     }
 
+    public IndexingStatusResponse indexPage() {
+        Document doc = savePageInfoAndGetDocument();
+        if (doc == null) return IndexingResponseGenerator.contentUnavailable(pageUrl);
+
+        return IndexingResponseGenerator.successResponse();
+    }
+
     protected Document savePageInfoAndGetDocument() {
         PageResponse pageResponse = HtmlWorker.getResponse(site.getUrl().concat(pageUrl));
         if (pageResponse == null) return null;
         pageResponse.setPath(pageUrl);
 
         Page page = createPage(pageResponse);
-        site.getPages().add(page);
-
         Document doc = null;
         Map<String, Integer> lemmasAndFrequency = null;
         if (!page.getContent().equals("")) {
