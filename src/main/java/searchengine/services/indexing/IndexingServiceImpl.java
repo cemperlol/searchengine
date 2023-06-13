@@ -2,6 +2,7 @@ package searchengine.services.indexing;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import searchengine.cache.LemmaCache;
 import searchengine.config.SitesList;
 import searchengine.model.*;
 import searchengine.repositories.IndexRepository;
@@ -190,8 +191,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     private List<Lemma> saveLemmas(Site site, Collection<String> lemmaValues) {
-        List<Lemma> existingLemmas = lemmaRepository.findBySiteId(site.getId());
-        List<Lemma> lemmas = new ArrayList<>();
+        int siteId = site.getId();
+        Set<Lemma> existingLemmas = LemmaCache.getSiteLemmas(siteId);
+        Set<Lemma> lemmas = new HashSet<>();
 
         lemmaValues.forEach(lemmaValue -> {
             Lemma lemma = existingLemmas.stream()
@@ -210,7 +212,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
             lemmas.add(lemma);
         });
 
-        return lemmaRepository.saveAll(lemmas);
+        List<Lemma> finalLemmas = lemmaRepository.saveAll(lemmas);
+        LemmaCache.addLemmasForSite(siteId, new HashSet<>(finalLemmas));
+        return finalLemmas;
     }
 
     private void saveIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
