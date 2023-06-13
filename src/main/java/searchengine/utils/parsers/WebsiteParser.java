@@ -1,6 +1,7 @@
 package searchengine.utils.parsers;
 
 import org.jsoup.nodes.Document;
+import searchengine.cache.PageCache;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.dto.page.PageResponse;
 import searchengine.logging.ApplicationLogger;
@@ -67,7 +68,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         if (parsingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
 
         pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
-        if (subscribers.stream().anyMatch(s -> s.checkPageExistence(site, pageUrl)))
+        if (PageCache.pageExists(site.getId(), pageUrl))
             return IndexingResponseGenerator.successResponse();
 
         executeDelay();

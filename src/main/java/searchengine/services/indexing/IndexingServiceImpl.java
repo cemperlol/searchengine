@@ -1,8 +1,9 @@
 package searchengine.services.indexing;
 
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import searchengine.cache.LemmaCache;
+import searchengine.cache.PageCache;
 import searchengine.config.SitesList;
 import searchengine.model.*;
 import searchengine.repositories.IndexRepository;
@@ -15,11 +16,13 @@ import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responseGenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
 
+import javax.persistence.PersistenceException;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.IntStream;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
@@ -35,6 +38,8 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     private final SitesList configSites;
 
     private static final ForkJoinPool POOL = new ForkJoinPool();
+
+    private static final Lock LOCK = new ReentrantLock();
 
     @Autowired
     public IndexingServiceImpl(SiteRepository siteRepository, PageRepository pageRepository,
@@ -169,67 +174,23 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     @Override
-    public boolean checkPageExistence(Site site, String path) {
-        return site.getPages().stream().anyMatch(p -> p.getPath().equals(path));
-    }
-
-    @Override
-    public synchronized void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
-        if (checkPageExistence(site, page.getPath())) return;
-
-        page = pageRepository.save(page);
-        site.getPages().add(page);
-        saveLemmasAndIndexes(site, page, lemmasAndFrequency);
-        siteRepository.updateStatusTime(site.getId());
-    }
-
-    private void saveLemmasAndIndexes(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
-        if (lemmasAndFrequency == null) return;
-
-        saveIndexes(page, saveLemmas(site, lemmasAndFrequency.keySet()),
-                lemmasAndFrequency.values().stream().toList());
-    }
-
-    private List<Lemma> saveLemmas(Site site, Collection<String> lemmaValues) {
+    public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
         int siteId = site.getId();
-        Set<Lemma> existingLemmas = LemmaCache.getSiteLemmas(siteId);
-        Set<Lemma> lemmas = new HashSet<>();
 
-        lemmaValues.forEach(lemmaValue -> {
-            Lemma lemma = existingLemmas.stream()
-                    .filter(l -> l.getLemma().equals(lemmaValue))
-                    .findFirst().orElse(null);
+        LOCK.lock();
+        try {
+            if (PageCache.pageExists(siteId, page.getPath())) return;
 
-            if (lemma != null) {
-                lemma.setFrequency(lemma.getFrequency() + 1);
-            } else {
-                lemma = new Lemma();
-                lemma.setSite(site);
-                lemma.setLemma(lemmaValue);
-                lemma.setFrequency(1);
-            }
+            pageRepository.save(page);
+            PageCache.addPageForSite(siteId, page.getPath());
+        } finally {
+            LOCK.unlock();
+        }
 
-            lemmas.add(lemma);
-        });
-
-        List<Lemma> finalLemmas = lemmaRepository.saveAll(lemmas);
-        LemmaCache.addLemmasForSite(siteId, new HashSet<>(finalLemmas));
-        return finalLemmas;
-    }
-
-    private void saveIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
-        List<Index> indexes = new ArrayList<>();
-        IntStream.range(0, lemmas.size()).forEach(i -> {
-            Lemma lemma = lemmas.get(i);
-            int rank = ranks.get(i);
-
-            Index index = new Index();
-            index.setLemma(lemma);
-            index.setPage(page);
-            index.setRank(rank);
-            indexes.add(index);
-        });
-
-        indexRepository.saveAll(indexes);
+        if (lemmasAndFrequency != null) {
+            lemmasAndFrequency.keySet().forEach(lemmaValue -> lemmaRepository.save(siteId, lemmaValue));
+            lemmasAndFrequency.forEach((l, r) -> indexRepository.save(siteId, page.getPath(), l, r));
+        }
+        siteRepository.updateStatusTime(site.getId());
     }
 }

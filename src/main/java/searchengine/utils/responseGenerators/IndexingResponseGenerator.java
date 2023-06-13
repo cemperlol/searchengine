@@ -17,7 +17,7 @@ public class IndexingResponseGenerator {
     }
 
     public static IndexingStatusResponse contentUnavailable(String fullUrl) {
-        return createFailureResponse("Failed to index page, " + fullUrl + " content unavailable");
+        return createFailureResponse("Failed to index page with url: " + fullUrl + ", content unavailable");
     }
 
     public static IndexingStatusResponse noIndexingRunning() {
