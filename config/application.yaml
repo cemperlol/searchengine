@@ -1,15 +1,15 @@
 indexing-settings:
   sites:
-#    - url: https://www.lenta.ru
-#      name: Лента.ру
-#    - url: https://www.skillbox.ru
-#      name: Skillbox
-#    - url: https://www.playback.ru
-#      name: PlayBack.Ru
-    - url: https://www.handmadebarbers.ru
-      name: HandmadeBarbers
-    - url: https://ogonek-rest.ru
-      name: Огонек
+    - url: https://www.lenta.ru
+      name: Лента.ру
+    - url: https://www.skillbox.ru
+      name: Skillbox
+    - url: https://www.playback.ru
+      name: PlayBack.Ru
+#    - url: https://www.handmadebarbers.ru
+#      name: HandmadeBarbers
+#    - url: https://ogonek-rest.ru
+#      name: Огонекч
 #    - url: https://www.ivksk.ru
 #      name: ИвКСК
 

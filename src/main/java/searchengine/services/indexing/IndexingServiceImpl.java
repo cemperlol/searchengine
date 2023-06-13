@@ -190,28 +190,31 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     private List<Lemma> saveLemmas(Site site, Collection<String> lemmaValues) {
-        return lemmaValues.stream()
-                .map(lemmaValue -> {
-                    Lemma lemma = site.getLemmas().stream()
-                            .filter(l -> l.getLemma().equals(lemmaValue))
-                            .findFirst().orElse(null);
+        List<Lemma> existingLemmas = lemmaRepository.findBySiteId(site.getId());
+        List<Lemma> lemmas = new ArrayList<>();
 
-                    if (lemma != null) {
-                        lemmaRepository.incrementFrequencyById(lemma.getId());
-                    } else {
-                        lemma = new Lemma();
-                        lemma.setSite(site);
-                        lemma.setLemma(lemmaValue);
-                        lemma.setFrequency(1);
-                        lemma = lemmaRepository.save(lemma);
-                    }
+        lemmaValues.forEach(lemmaValue -> {
+            Lemma lemma = existingLemmas.stream()
+                    .filter(l -> l.getLemma().equals(lemmaValue))
+                    .findFirst().orElse(null);
 
-                    site.getLemmas().add(lemma);
-                    return lemma;
-                }).toList();
+            if (lemma != null) {
+                lemma.setFrequency(lemma.getFrequency() + 1);
+            } else {
+                lemma = new Lemma();
+                lemma.setSite(site);
+                lemma.setLemma(lemmaValue);
+                lemma.setFrequency(1);
+            }
+
+            lemmas.add(lemma);
+        });
+
+        return lemmaRepository.saveAll(lemmas);
     }
 
     private void saveIndexes(Page page, List<Lemma> lemmas, List<Integer> ranks) {
+        List<Index> indexes = new ArrayList<>();
         IntStream.range(0, lemmas.size()).forEach(i -> {
             Lemma lemma = lemmas.get(i);
             int rank = ranks.get(i);
@@ -220,7 +223,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
             index.setLemma(lemma);
             index.setPage(page);
             index.setRank(rank);
-            indexRepository.save(index);
+            indexes.add(index);
         });
+
+        indexRepository.saveAll(indexes);
     }
 }
