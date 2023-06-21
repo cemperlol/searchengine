@@ -20,8 +20,7 @@ public class RelevanceWorker {
                 .max(Double::compare).orElse(1.0f);
     }
 
-    public static float getRelRelevance(Set<Index> indexes, float absRelevance) {
-        float pageRelevance = getPageRelevance(indexes);
+    public static float getRelRelevance(float pageRelevance, float absRelevance) {
         return pageRelevance / absRelevance;
     }
 }

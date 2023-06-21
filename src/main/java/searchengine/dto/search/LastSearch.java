@@ -34,4 +34,10 @@ public class LastSearch {
     public static void setResponse(SearchResponse response) {
         LastSearch.response = response;
     }
+
+    public static void clear() {
+        site = "";
+        query = "";
+        response = null;
+    }
 }

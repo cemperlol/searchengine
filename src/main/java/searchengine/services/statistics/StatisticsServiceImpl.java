@@ -9,6 +9,8 @@ import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.utils.workers.HttpWorker;
 
@@ -19,18 +21,26 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     private final SiteRepository siteRepository;
 
+    private final PageRepository pageRepository;
+
+    private final LemmaRepository lemmaRepository;
+
     private final SitesList configSites;
     
     @Autowired
-    public StatisticsServiceImpl(SiteRepository siteRepository, SitesList configSites) {
+    public StatisticsServiceImpl(SiteRepository siteRepository, PageRepository pageRepository,
+                                 LemmaRepository lemmaRepository, SitesList configSites) {
+
         this.siteRepository = siteRepository;
+        this.pageRepository = pageRepository;
+        this.lemmaRepository = lemmaRepository;
         this.configSites = configSites;
     }
 
     @Override
     public StatisticsResponse getStatistics() {
         TotalStatistics totalStatistics = new TotalStatistics();
-        totalStatistics.setSites(configSites.getSites().size());
+        totalStatistics.setSites((int) siteRepository.count());
 
         List<DetailedStatisticsItem> detailedStatistics = configSites.getSites().stream()
                 .map(configSite -> {
@@ -62,11 +72,12 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     private DetailedStatisticsItem configureItem(Site site) {
+        int siteId = site.getId();
         DetailedStatisticsItem item = new DetailedStatisticsItem();
         item.setName(site.getName());
         item.setUrl(site.getUrl());
-        item.setPages(site.getPages().size());
-        item.setLemmas(site.getLemmas().size());
+        item.setPages(pageRepository.countBySiteId(siteId));
+        item.setLemmas(lemmaRepository.countBySiteId(siteId));
         item.setStatus(site.getStatus());
         item.setError(site.getLastError() == null ? "" : site.getLastError());
         item.setStatusTime(site.getStatusTime().getTime());

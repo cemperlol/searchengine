@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Lemma;
 
+import java.util.List;
+
 @Repository
 @Transactional
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {
@@ -21,9 +23,8 @@ public interface LemmaRepository extends CommonEntityRepository<Lemma> {
     @Query("select l from Lemma l where l.site.id = :siteId and l.lemma = :lemma")
     Lemma findBySiteIdAndLemma(@Param("siteId") int siteId, @Param("lemma") String lemma);
 
-    @Modifying
-    @Query("update Lemma l set l.frequency = l.frequency + 1 where l.id = :id")
-    void incrementFrequencyById(@Param("id") int id);
+    @Query("select count(l) from Lemma l where l.site.id = :siteId")
+    int countBySiteId(@Param("siteId") int siteId);
 
     @Modifying
     @Query("update Lemma l set l.frequency = l.frequency - 1 where l.id = :id")

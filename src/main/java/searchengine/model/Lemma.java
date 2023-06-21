@@ -27,9 +27,9 @@ public class Lemma {
     @Column(nullable = false)
     private int frequency;
 
-    @ManyToMany(mappedBy = "pageLemmas")
+    @ManyToMany(mappedBy = "pageLemmas", fetch = FetchType.LAZY)
     Set<Page> lemmaPages = new HashSet<>();
 
-    @OneToMany(mappedBy = "lemma")
+    @OneToMany(mappedBy = "lemma", fetch = FetchType.LAZY)
     private Set<Index> indexes;
 }

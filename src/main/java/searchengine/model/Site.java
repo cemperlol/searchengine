@@ -36,9 +36,9 @@ public class Site {
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "site", fetch = FetchType.LAZY)
     private Set<Page> pages = new HashSet<>();
 
-    @OneToMany(mappedBy = "site", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "site", fetch = FetchType.LAZY)
     private Set<Lemma> lemmas = new HashSet<>();
 }

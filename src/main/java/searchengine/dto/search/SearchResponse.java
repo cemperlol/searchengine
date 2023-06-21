@@ -7,6 +7,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SearchResponse {
 
+    private boolean result;
+
+    private String error = "no error";
+
+    private int count;
+
+    private SearchServiceResult[] data;
+
     public SearchResponse(String error, boolean result) {
         this.error = error;
         this.result = result;
@@ -24,12 +32,4 @@ public class SearchResponse {
         this.count = response.count;
         this.data = response.data;
     }
-
-    private boolean result;
-
-    private String error = "no error";
-
-    private int count;
-
-    private SearchServiceResult[] data;
 }

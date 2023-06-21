@@ -38,6 +38,6 @@ public class Page {
     )
     private Set<Lemma> pageLemmas = new HashSet<>();
 
-    @OneToMany(mappedBy = "page")
+    @OneToMany(mappedBy = "page", fetch = FetchType.LAZY)
     private Set<Index> indexes;
 }
