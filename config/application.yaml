@@ -9,13 +9,13 @@ indexing-settings:
 #    - url: https://www.handmadebarbers.ru
 #      name: HandmadeBarbers
 #    - url: https://ogonek-rest.ru
-#      name: Огонекч
+#      name: Огонек
 #    - url: https://www.ivksk.ru
 #      name: ИвКСК
 
 
 
-debug: true
+#debug: true
 
 #logging:
 #  config: src/main/resources/log4j2.xml

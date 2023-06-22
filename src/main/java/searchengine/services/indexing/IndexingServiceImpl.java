@@ -112,6 +112,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
     @Override
     public IndexingStatusResponse indexPage(String url) {
+        url = url.trim();
         String baseUrl = HttpWorker.getBaseUrl(url);
         Site site = siteRepository.findByUrl(baseUrl);
         if (site == null && configSites.getSites().stream()
