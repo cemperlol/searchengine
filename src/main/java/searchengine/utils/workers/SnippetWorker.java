@@ -23,21 +23,20 @@ public class SnippetWorker {
                 .map(AtomicReference::new)
                 .toList();
 
-        String rarestLemma = lemmas.get(0).getLemma();
         textBlocks.forEach(block -> block.set(highlightLemmas(block, lemmas)));
         StringBuilder allocatedText = new StringBuilder();
         textBlocks.forEach(block ->
                 allocatedText.append(allocatedText.isEmpty() ? "" : " ").append(block.get()));
 
-        int start = getSnippetStart(allocatedText, rarestLemma);
+        int start = getSnippetStart(allocatedText);
 
         return (start == 0 ? "" : "...")
                 .concat(allocatedText.substring(start, Math.min(allocatedText.length(), start + 216)))
                 .concat("...");
     }
 
-    private static int getSnippetStart(StringBuilder allocatedText, String rarestLemma) {
-        int start = allocatedText.toString().indexOf(rarestLemma);
+    private static int getSnippetStart(StringBuilder allocatedText) {
+        int start = allocatedText.toString().indexOf("<b>");
 
         return start < 22 ? 0 : start - 22;
     }

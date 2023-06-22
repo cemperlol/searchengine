@@ -6,7 +6,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.services.search.SearchService;
-import searchengine.utils.responseGenerators.SearchResponseGenerator;
+import searchengine.utils.responsegenerators.SearchResponseGenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

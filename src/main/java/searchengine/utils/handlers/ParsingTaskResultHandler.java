@@ -3,21 +3,18 @@ package searchengine.utils.handlers;
 import lombok.RequiredArgsConstructor;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.utils.parsers.WebsiteParser;
-import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
 @RequiredArgsConstructor
 public class ParsingTaskResultHandler {
 
     private List<ForkJoinTask<IndexingStatusResponse>> futureTasks;
-
-    private final ForkJoinPool forkJoinPool = new ForkJoinPool();
 
     private final List<WebsiteParser> tasks;
 

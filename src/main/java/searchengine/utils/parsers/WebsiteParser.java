@@ -10,7 +10,7 @@ import searchengine.model.Site;
 import searchengine.services.ParsingSubscriber;
 import searchengine.utils.handlers.ParsingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
-import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.HttpWorker;
 

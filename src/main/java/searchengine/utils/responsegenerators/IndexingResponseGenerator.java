@@ -1,4 +1,4 @@
-package searchengine.utils.responseGenerators;
+package searchengine.utils.responsegenerators;
 
 import searchengine.dto.indexing.IndexingStatusResponse;
 

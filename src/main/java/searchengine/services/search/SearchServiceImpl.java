@@ -10,15 +10,19 @@ import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchServiceResult;
 import searchengine.model.*;
 import searchengine.utils.lemmas.Lemmatizator;
-import searchengine.utils.responseGenerators.SearchResponseGenerator;
+import searchengine.utils.responsegenerators.SearchResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.RelevanceWorker;
 import searchengine.utils.workers.SnippetWorker;
 
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class SearchServiceImpl implements SearchService {
+
+    private static final Lock lock = new ReentrantLock();
 
     private final SiteRepository siteRepository;
 
@@ -41,12 +45,19 @@ public class SearchServiceImpl implements SearchService {
     public SearchResponse search(String query, String siteUrl, int offset, int limit) {
         if (query.isBlank()) return SearchResponseGenerator.emptyQuery();
 
-        if (!query.equals(LastSearch.getQuery()) || !siteUrl.equals(LastSearch.getSite())) {
-            LastSearch.clear();
-            LastSearch.setQuery(query);
-            LastSearch.setSite("");
-            LastSearch.setResponse(siteUrl.equals("") ? globalSearch(query) : siteSearch(query, siteUrl));
+        lock.lock();
+        try {
+            if (!query.equals(LastSearch.getQuery()) || !siteUrl.equals(LastSearch.getSite())) {
+                System.gc();
+                LastSearch.clear();
+                LastSearch.setQuery(query);
+                LastSearch.setSite("");
+                LastSearch.setResponse(siteUrl.equals("") ? globalSearch(query) : siteSearch(query, siteUrl));
+            }
+        } finally {
+            lock.unlock();
         }
+
 
         SearchResponse response = new SearchResponse(LastSearch.getResponse());
         if (response.getData() != null) {
@@ -67,7 +78,7 @@ public class SearchServiceImpl implements SearchService {
         int pageCount = pageRepository.countBySiteId(siteId);
 
         List<Lemma> lemmas = getAscendingLemmasFromQuery(query, siteId, pageCount);
-        List<Page> pages = getPagesWithFullQuery(site, lemmas);
+        List<Page> pages = getPagesWithAllLemmas(lemmas);
 
         if (pages.isEmpty()) return SearchResponseGenerator.noResults();
 
@@ -125,15 +136,15 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private boolean filterTooFrequentLemmasOnSite(Lemma lemma, int pageCount) {
-        if (pageCount < 10) return true;
-        return (float) lemma.getFrequency() / pageCount < 0.05f;
+        if (pageCount < 20) return true;
+        return (float) lemma.getFrequency() / pageCount < 0.1f;
     }
 
-    private List<Page> getPagesWithFullQuery(Site site, List<Lemma> lemmas) {
+    private List<Page> getPagesWithAllLemmas(List<Lemma> lemmas) {
         if (lemmas.isEmpty()) return new ArrayList<>();
         if (lemmas.size() == 1) return lemmas.get(0).getLemmaPages().stream().toList();
 
-        return site.getPages().stream()
+        return lemmas.get(0).getLemmaPages().stream()
                 .filter(page -> page.getPageLemmas().containsAll(lemmas))
                 .toList();
     }

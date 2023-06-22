@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.services.indexing.IndexingService;
-import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;

@@ -1,6 +1,5 @@
 package searchengine.services.indexing;
 
-import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import searchengine.cache.PageCache;
@@ -13,10 +12,9 @@ import searchengine.repositories.SiteRepository;
 import searchengine.services.ParsingSubscriber;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.utils.parsers.WebsiteParser;
-import searchengine.utils.responseGenerators.IndexingResponseGenerator;
+import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
 
-import javax.persistence.PersistenceException;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -37,9 +35,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
     private final SitesList configSites;
 
-    private static final ForkJoinPool POOL = new ForkJoinPool();
+    private static final ForkJoinPool pool = new ForkJoinPool();
 
-    private static final Lock LOCK = new ReentrantLock();
+    private static final Lock lock = new ReentrantLock();
 
     @Autowired
     public IndexingServiceImpl(SiteRepository siteRepository, PageRepository pageRepository,
@@ -82,7 +80,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     private void processIndexingResult(WebsiteParser task) {
-        IndexingStatusResponse result = POOL.invoke(task);
+        IndexingStatusResponse result = pool.invoke(task);
 
         int siteId = task.getSite().getId();
         if (result.isResult()) {
@@ -95,6 +93,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                 .noneMatch(site -> site.getStatus().equals(SiteStatus.INDEXING))) {
             WebsiteParser.setParsingStopped(true);
             WebsiteParser.unsubscribe(this);
+            PageCache.clearCache();
         }
     }
 
@@ -177,20 +176,21 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
         int siteId = site.getId();
 
-        LOCK.lock();
+        lock.lock();
         try {
             if (PageCache.pageExists(siteId, page.getPath())) return;
 
             pageRepository.save(page);
             PageCache.addPageForSite(siteId, page.getPath());
         } finally {
-            LOCK.unlock();
+            lock.unlock();
         }
 
         if (lemmasAndFrequency != null) {
             lemmasAndFrequency.keySet().forEach(lemmaValue -> lemmaRepository.save(siteId, lemmaValue));
             lemmasAndFrequency.forEach((l, r) -> indexRepository.save(siteId, page.getPath(), l, r));
         }
+
         siteRepository.updateStatusTime(site.getId());
     }
 }
