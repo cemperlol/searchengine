@@ -14,5 +14,5 @@ public class PageResponse {
 
     private String responseBody;
 
-    private String CauseOfError;
+    private String causeOfError;
 }

@@ -77,7 +77,7 @@ public class SearchServiceImpl implements SearchService {
         int siteId = site.getId();
         int pageCount = pageRepository.countBySiteId(siteId);
 
-        List<Lemma> lemmas = getAscendingLemmasFromQuery(query, siteId, pageCount);
+        List<Lemma> lemmas = getQueryLemmasAscendingFrequency(query, siteId, pageCount);
         List<Page> pages = getPagesWithAllLemmas(lemmas);
 
         if (pages.isEmpty()) return SearchResponseGenerator.noResults();
@@ -124,7 +124,7 @@ public class SearchServiceImpl implements SearchService {
         return sitesResponses;
     }
 
-    private List<Lemma> getAscendingLemmasFromQuery(String query, int siteId, int pageCount) {
+    private List<Lemma> getQueryLemmasAscendingFrequency(String query, int siteId, int pageCount) {
         Set<String> lemmaValues = Lemmatizator.getLemmas(query).keySet();
         List<Lemma> lemmas = lemmaValues.stream()
                 .map(lemmaValue -> lemmaRepository.findBySiteIdAndLemma(siteId, lemmaValue))

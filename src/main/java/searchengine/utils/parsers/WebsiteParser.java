@@ -67,8 +67,8 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     protected IndexingStatusResponse compute() {
         if (parsingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
 
-        pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), pageUrl);
-        if (PageCache.pageExists(site.getId(), pageUrl))
+        pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), pageUrl);
+        if (PageCache.pageIndexed(site.getId(), pageUrl))
             return IndexingResponseGenerator.successResponse();
 
         executeDelay();
@@ -119,9 +119,9 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         List<WebsiteParser> subtasks = new ArrayList<>();
 
         for (String u : doc.select("a").eachAttr("abs:href")) {
-            if (sitePattern.matcher(HttpWorker.makeUrlWithoutWWW(u)).find()
+            if (sitePattern.matcher(HttpWorker.removeWwwFromUrl(u)).find()
                     && !u.contains("#") && !u.contains("?")) {
-                subtasks.add(new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(u)));
+                subtasks.add(new WebsiteParser(site, HttpWorker.appendSlashToUrlEnd(u)));
             }
         }
 
@@ -136,7 +136,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         try {
             Thread.sleep(DELAY);
         } catch (InterruptedException e) {
-            ApplicationLogger.log(e);
+            ApplicationLogger.logError(e);
         }
     }
 }

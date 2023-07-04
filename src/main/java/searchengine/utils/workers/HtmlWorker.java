@@ -59,7 +59,7 @@ public class HtmlWorker {
         try {
             doc = response.parse();
         } catch (IOException e) {
-            ApplicationLogger.log(e);
+            ApplicationLogger.logError(e);
         }
 
         return doc;
@@ -68,9 +68,7 @@ public class HtmlWorker {
     public static String clearFromHtml(String text) {
         Document doc = Jsoup.parse(text);
         StringBuilder sb = new StringBuilder();
-        doc.select("*").forEach(e -> {
-            sb.append(e.ownText()).append(" ");
-        });
+        doc.select("*").forEach(e -> sb.append(e.ownText()).append(" "));
 
         return sb.toString().replaceAll("\\s{2,}", ". ").toLowerCase().trim();
     }

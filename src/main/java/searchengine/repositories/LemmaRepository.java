@@ -7,8 +7,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Lemma;
 
-import java.util.List;
-
 @Repository
 @Transactional
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {

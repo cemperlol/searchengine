@@ -10,7 +10,7 @@ import searchengine.repositories.SiteRepository;
 @Component
 public class SearchEngineListener implements ApplicationListener<ApplicationReadyEvent> {
 
-    private static final String INCORRECT_SHUTDOWN = "Application was shutdown incorrectly";
+    private static final String INCORRECT_SHUTDOWN_ERR_MSG = "Application was shutdown incorrectly";
 
     private final SiteRepository siteRepository;
 
@@ -23,6 +23,6 @@ public class SearchEngineListener implements ApplicationListener<ApplicationRead
     public void onApplicationEvent(ApplicationReadyEvent event) {
         siteRepository.findAll().stream()
                 .filter(site -> site.getStatus().equals(SiteStatus.INDEXING))
-                .forEach(site -> siteRepository.updateLastError(site.getId(), INCORRECT_SHUTDOWN));
+                .forEach(site -> siteRepository.updateLastError(site.getId(), INCORRECT_SHUTDOWN_ERR_MSG));
     }
 }

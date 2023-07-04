@@ -55,7 +55,7 @@ public class Lemmatizator {
         try {
             return new RussianLuceneMorphology();
         } catch (IOException e) {
-            ApplicationLogger.log(e);
+            ApplicationLogger.logError(e);
         }
 
         return null;

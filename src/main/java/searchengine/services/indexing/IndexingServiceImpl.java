@@ -56,12 +56,12 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
         WebsiteParser.setParsingStopped(false);
         WebsiteParser.subscribe(this);
-        CompletableFuture.runAsync(this::prepareIndexing);
+        CompletableFuture.runAsync(this::prepareForIndexing);
 
         return IndexingResponseGenerator.successResponse();
     }
 
-    private void prepareIndexing() {
+    private void prepareForIndexing() {
         clearTablesBeforeStartIndexing();
 
         List<WebsiteParser> tasks = configSites.getSites().stream()
@@ -69,11 +69,11 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                     Site site = new Site();
                     site.setStatus(SiteStatus.INDEXING);
                     site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-                    site.setUrl(HttpWorker.makeUrlWithoutWWW(s.getUrl()));
+                    site.setUrl(HttpWorker.removeWwwFromUrl(s.getUrl()));
                     site.setName(s.getName());
                     siteRepository.save(site);
 
-                    return new WebsiteParser(site, HttpWorker.makeUrlWithSlashEnd(site.getUrl()));
+                    return new WebsiteParser(site, HttpWorker.appendSlashToUrlEnd(site.getUrl()));
                 }).toList();
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
@@ -88,12 +88,12 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         } else {
             siteRepository.updateLastError(siteId, result.getError());
         }
+        PageCache.clearSitePagesCache(siteId);
 
         if (siteRepository.findAll().stream()
                 .noneMatch(site -> site.getStatus().equals(SiteStatus.INDEXING))) {
             WebsiteParser.setParsingStopped(true);
             WebsiteParser.unsubscribe(this);
-            PageCache.clearCache();
         }
     }
 
@@ -103,6 +103,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
         WebsiteParser.setParsingStopped(true);
         WebsiteParser.unsubscribe(this);
+        PageCache.clearCache();
         siteRepository.findAll().stream()
                 .filter(site -> site.getStatus().equals(SiteStatus.INDEXING))
                 .forEach(site -> siteRepository.updateLastError(site.getId(), "User stopped indexing"));
@@ -116,13 +117,13 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         String baseUrl = HttpWorker.getBaseUrl(url);
         Site site = siteRepository.findByUrl(baseUrl);
         if (site == null && configSites.getSites().stream()
-                        .noneMatch(s -> HttpWorker.makeUrlWithoutWWW(s.getUrl()).equals(baseUrl))) {
+                        .noneMatch(s -> HttpWorker.removeWwwFromUrl(s.getUrl()).equals(baseUrl))) {
             return IndexingResponseGenerator.siteNotAdded();
         }
         if (site == null) {
             site = saveSite(baseUrl);
         }
-        String pageUrl = HttpWorker.getUrlWithoutDomainName(site.getUrl(), HttpWorker.makeUrlWithSlashEnd(url));
+        String pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), HttpWorker.appendSlashToUrlEnd(url));
 
         clearTablesBeforeIndexPage(site, pageUrl);
         WebsiteParser task = new WebsiteParser(site, pageUrl);
@@ -167,19 +168,19 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HttpWorker.makeUrlWithoutWWW(siteUrl));
+        site.setUrl(HttpWorker.removeWwwFromUrl(siteUrl));
         site.setName(siteUrl);
 
         return siteRepository.save(site);
     }
 
     @Override
-    public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
+    public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
         int siteId = site.getId();
 
         lock.lock();
         try {
-            if (PageCache.pageExists(siteId, page.getPath())) return;
+            if (PageCache.pageIndexed(siteId, page.getPath())) return;
 
             pageRepository.save(page);
             PageCache.addPageForSite(siteId, page.getPath());
@@ -187,9 +188,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
             lock.unlock();
         }
 
-        if (lemmasAndFrequency != null) {
-            lemmasAndFrequency.keySet().forEach(lemmaValue -> lemmaRepository.save(siteId, lemmaValue));
-            lemmasAndFrequency.forEach((l, r) -> indexRepository.save(siteId, page.getPath(), l, r));
+        if (lemmasAndFrequencies != null) {
+            lemmasAndFrequencies.keySet().forEach(lemmaValue -> lemmaRepository.save(siteId, lemmaValue));
+            lemmasAndFrequencies.forEach((l, r) -> indexRepository.save(siteId, page.getPath(), l, r));
         }
 
         siteRepository.updateStatusTime(site.getId());

@@ -8,8 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Site;
 import searchengine.model.SiteStatus;
 
-import java.util.Optional;
-
 @Repository
 public interface SiteRepository extends CommonEntityRepository<Site> {
 

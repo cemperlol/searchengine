@@ -13,13 +13,6 @@ indexing-settings:
 #    - url: https://www.ivksk.ru
 #      name: ИвКСК
 
-
-
-#debug: true
-
-#logging:
-#  config: src/main/resources/log4j2.xml
-
 server:
   port: 8080
 
