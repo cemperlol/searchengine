@@ -7,6 +7,7 @@ import searchengine.logging.ApplicationLogger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -28,8 +29,9 @@ public class Lemmatizator {
 
         while (matcher.find()) {
             String word = text.substring(matcher.start(), matcher.end());
-            if (word.isBlank() || checkIfServicePart(word)) continue;
-            lemmas.merge(russianLuceneMorph.getNormalForms(word).get(0), 1, Integer::sum);
+            russianLuceneMorph.getNormalForms(word).stream()
+                    .filter(f -> !checkIfServicePart(f))
+                    .forEach(f -> lemmas.merge(f, 1, Integer::sum));
         }
 
         return lemmas;
@@ -40,12 +42,15 @@ public class Lemmatizator {
     }
 
     public static String makeTextValid(String text) {
-        return text.toLowerCase().replaceAll("(^[а-яё]\\s)+", " ").replaceAll("ё", "е");
+        return text.toLowerCase().replaceAll("[^а-яё\\s]+", " ").replaceAll("ё", "е");
     }
 
     private static boolean checkIfServicePart(String wordForm) {
+        List<String> info = russianLuceneMorph.getMorphInfo(wordForm);
         for (String servicePart : SERVICE_PARTS) {
-            if (wordForm.contains(servicePart)) return true;
+            if (info.stream().anyMatch(i -> i.contains(servicePart))) {
+                return true;
+            }
         }
 
         return false;

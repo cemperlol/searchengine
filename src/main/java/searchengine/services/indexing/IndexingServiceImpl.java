@@ -9,8 +9,8 @@ import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
-import searchengine.services.ParsingSubscriber;
 import searchengine.dto.indexing.IndexingStatusResponse;
+import searchengine.utils.data.DataReceiver;
 import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
@@ -23,7 +23,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
-public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
+public class IndexingServiceImpl implements IndexingService, DataReceiver {
 
     private final SiteRepository siteRepository;
 
@@ -55,7 +55,6 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         if (!WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.indexingAlreadyStarted();
 
         WebsiteParser.setParsingStopped(false);
-        WebsiteParser.subscribe(this);
         CompletableFuture.runAsync(this::prepareForIndexing);
 
         return IndexingResponseGenerator.successResponse();
@@ -73,7 +72,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                     site.setName(s.getName());
                     siteRepository.save(site);
 
-                    return new WebsiteParser(site, HttpWorker.appendSlashToUrlEnd(site.getUrl()));
+                    return new WebsiteParser(this, site, HttpWorker.appendSlashToUrlEnd(site.getUrl()));
                 }).toList();
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
@@ -92,8 +91,8 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
 
         if (siteRepository.findAll().stream()
                 .noneMatch(site -> site.getStatus().equals(SiteStatus.INDEXING))) {
+            pool.shutdown();
             WebsiteParser.setParsingStopped(true);
-            WebsiteParser.unsubscribe(this);
         }
     }
 
@@ -102,7 +101,6 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         if (WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.noIndexingRunning();
 
         WebsiteParser.setParsingStopped(true);
-        WebsiteParser.unsubscribe(this);
         PageCache.clearCache();
         siteRepository.findAll().stream()
                 .filter(site -> site.getStatus().equals(SiteStatus.INDEXING))
@@ -126,13 +124,9 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         String pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), HttpWorker.appendSlashToUrlEnd(url));
 
         clearTablesBeforeIndexPage(site, pageUrl);
-        WebsiteParser task = new WebsiteParser(site, pageUrl);
-        WebsiteParser.subscribe(this);
+        WebsiteParser task = new WebsiteParser(this, site, pageUrl);
 
-        IndexingStatusResponse response = task.indexPage();
-        WebsiteParser.unsubscribe(this);
-
-        return response;
+        return task.indexPage();
     }
 
     private void clearTablesBeforeStartIndexing() {
@@ -148,10 +142,8 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                 .findFirst().orElse(null);
         if (page == null) return;
 
-        indexRepository.deleteAllInBatch(page.getIndexes());
         List<Lemma> lemmasToRemove = new ArrayList<>();
-
-        site.getLemmas().forEach(lemma -> {
+        page.getPageLemmas().forEach(lemma -> {
             if (lemma.getFrequency() == 1) {
                 lemmasToRemove.add(lemma);
                 lemmaRepository.delete(lemma);
@@ -159,6 +151,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
                 lemmaRepository.decrementFrequencyById(lemma.getId());
             }
         });
+        indexRepository.deleteAllInBatch(page.getIndexes());
         lemmasToRemove.forEach(site.getLemmas()::remove);
         site.getPages().remove(page);
         pageRepository.delete(page);
@@ -175,7 +168,7 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
     }
 
     @Override
-    public void update(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
+    public void receiveData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
         int siteId = site.getId();
 
         lock.lock();
@@ -189,8 +182,10 @@ public class IndexingServiceImpl implements IndexingService, ParsingSubscriber {
         }
 
         if (lemmasAndFrequencies != null) {
-            lemmasAndFrequencies.keySet().forEach(lemmaValue -> lemmaRepository.save(siteId, lemmaValue));
-            lemmasAndFrequencies.forEach((l, r) -> indexRepository.save(siteId, page.getPath(), l, r));
+            lemmasAndFrequencies.forEach((l, f) -> {
+                lemmaRepository.save(siteId, l);
+                indexRepository.save(siteId, page.getPath(), l, f);
+            });
         }
 
         siteRepository.updateStatusTime(site.getId());

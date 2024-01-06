@@ -7,7 +7,7 @@ import searchengine.dto.page.PageResponse;
 import searchengine.logging.ApplicationLogger;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.services.ParsingSubscriber;
+import searchengine.utils.data.DataReceiver;
 import searchengine.utils.handlers.ParsingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
@@ -27,7 +27,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
     private static final AtomicBoolean parsingStopped;
 
-    private static final List<ParsingSubscriber> subscribers;
+    private final DataReceiver dataReceiver;
 
     private final Site site;
 
@@ -35,20 +35,12 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
     static {
         parsingStopped = new AtomicBoolean(true);
-        subscribers = new ArrayList<>();
     }
 
-    public WebsiteParser(Site site, String pageUrl) {
+    public WebsiteParser(DataReceiver dataReceiver, Site site, String pageUrl) {
+        this.dataReceiver = dataReceiver;
         this.site = site;
         this.pageUrl = pageUrl;
-    }
-
-    public static void subscribe(ParsingSubscriber subscriber) {
-        subscribers.add(subscriber);
-    }
-
-    public static void unsubscribe(ParsingSubscriber subscriber) {
-        subscribers.remove(subscriber);
     }
 
     public static boolean isParsingStopped() {
@@ -93,13 +85,13 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
         Page page = createPage(pageResponse);
         Document doc = null;
-        Map<String, Integer> lemmasAndFrequency = null;
+        Map<String, Integer> lemmasAndFrequencies = null;
         if (!page.getContent().equals("")) {
             doc = HtmlWorker.parsePage(pageResponse.getResponse());
-            lemmasAndFrequency = Lemmatizator.getLemmas(doc);
+            lemmasAndFrequencies = Lemmatizator.getLemmas(doc);
         }
 
-        notifySubscribers(site, page, lemmasAndFrequency);
+        sendData(site, page, lemmasAndFrequencies);
 
         return doc;
     }
@@ -121,15 +113,15 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         for (String u : doc.select("a").eachAttr("abs:href")) {
             if (sitePattern.matcher(HttpWorker.removeWwwFromUrl(u)).find()
                     && !u.contains("#") && !u.contains("?")) {
-                subtasks.add(new WebsiteParser(site, HttpWorker.appendSlashToUrlEnd(u)));
+                subtasks.add(new WebsiteParser(dataReceiver, site, HttpWorker.appendSlashToUrlEnd(u)));
             }
         }
 
         return subtasks;
     }
 
-    protected void notifySubscribers(Site site, Page page, Map<String, Integer> lemmasAndFrequency) {
-        subscribers.forEach(s -> s.update(site, page, lemmasAndFrequency));
+    protected void sendData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
+        dataReceiver.receiveData(site, page, lemmasAndFrequencies);
     }
 
     protected void executeDelay() {

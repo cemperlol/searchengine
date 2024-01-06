@@ -6,8 +6,8 @@ indexing-settings:
       name: Skillbox
     - url: https://www.playback.ru
       name: PlayBack.Ru
-#    - url: https://www.handmadebarbers.ru
-#      name: HandmadeBarbers
+    - url: https://www.caffeshop.ru/
+      name: Сaffeshop
 #    - url: https://ogonek-rest.ru
 #      name: Огонек
 #    - url: https://www.ivksk.ru

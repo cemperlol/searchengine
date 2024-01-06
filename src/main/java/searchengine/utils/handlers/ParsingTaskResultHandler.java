@@ -27,7 +27,7 @@ public class ParsingTaskResultHandler {
         List<IndexingStatusResponse> results = getTasksResult();
         if (results == null) return IndexingResponseGenerator.failedToGetIndexingTasksResult();
 
-        if (results.stream().anyMatch(IndexingStatusResponse::isResult))
+        if (results.stream().allMatch(IndexingStatusResponse::isResult))
             return IndexingResponseGenerator.successResponse();
 
         StringJoiner totalError = new StringJoiner(", " + System.lineSeparator());
