@@ -169,6 +169,7 @@ public class IndexingServiceImpl implements IndexingService, DataReceiver {
 
     @Override
     public void receiveData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
+        if (WebsiteParser.isParsingStopped()) return;
         int siteId = site.getId();
 
         lock.lock();

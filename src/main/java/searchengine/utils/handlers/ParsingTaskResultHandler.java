@@ -32,7 +32,7 @@ public class ParsingTaskResultHandler {
 
         StringJoiner totalError = new StringJoiner(", " + System.lineSeparator());
         results.forEach(r -> {
-            if (!r.isResult()) totalError.add(r.getError());
+            if (!r.isResult() && !totalError.toString().contains(r.getError())) totalError.add(r.getError());
         });
         return IndexingResponseGenerator.createFailureResponse(totalError.toString());
     }
