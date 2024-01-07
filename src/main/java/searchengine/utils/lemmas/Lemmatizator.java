@@ -4,7 +4,7 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.nodes.Document;
 import searchengine.logging.ApplicationLogger;
-import searchengine.utils.workers.StringWorker;
+import searchengine.utils.workers.TextWorker;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class Lemmatizator {
     public static Map<String, Integer> getLemmas(String text) {
         if (russianLuceneMorph == null) return new HashMap<>();
 
-        List<String> words = StringWorker.findAllWords(text);
+        List<String> words = TextWorker.findAllWords(text);
         Map<String, Integer> lemmas = new HashMap<>();
 
         for (String word : words) {

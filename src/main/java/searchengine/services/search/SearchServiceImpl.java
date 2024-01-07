@@ -14,7 +14,7 @@ import searchengine.utils.responsegenerators.SearchResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.RelevanceWorker;
 import searchengine.utils.workers.SnippetWorker;
-import searchengine.utils.workers.StringWorker;
+import searchengine.utils.workers.TextWorker;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -83,14 +83,13 @@ public class SearchServiceImpl implements SearchService {
         if (pages.isEmpty()) return SearchResponseGenerator.noResults();
 
         Map<Page, Set<Index>> pageAndIndexes = new HashMap<>();
-        pageCount = pages.size();
         pages.forEach(page -> pageAndIndexes.put(page, page.getIndexes()));
         absRelevance = Math.max(absRelevance, RelevanceWorker.getAbsRelevance(pageAndIndexes.values()));
         List<String> words = new ArrayList<>(lemmas.stream().map(Lemma::getLemma).toList());
-        words.addAll(StringWorker.findAllWords(query));
+        words.addAll(TextWorker.findAllWords(query));
 
         return SearchResponseGenerator
-                .resultsFound(pageCount, searchResults(words, pageAndIndexes));
+                .resultsFound(pages.size(), searchResults(words, pageAndIndexes));
     }
 
     private SearchResponse siteSearch(String query, String siteUrl) {

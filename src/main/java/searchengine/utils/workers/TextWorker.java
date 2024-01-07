@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class StringWorker {
+public class TextWorker {
 
     private static final Pattern PATTERN = Pattern.compile("[а-яё]+");
 
