@@ -7,7 +7,7 @@ import searchengine.dto.page.PageResponse;
 import searchengine.logging.ApplicationLogger;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.utils.data.DataReceiver;
+import searchengine.services.indexing.IndexingService;
 import searchengine.utils.handlers.ParsingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
@@ -27,7 +27,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
     private static final AtomicBoolean parsingStopped;
 
-    private final DataReceiver dataReceiver;
+    private final IndexingService indexingService;
 
     private final Site site;
 
@@ -37,8 +37,8 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         parsingStopped = new AtomicBoolean(true);
     }
 
-    public WebsiteParser(DataReceiver dataReceiver, Site site, String pageUrl) {
-        this.dataReceiver = dataReceiver;
+    public WebsiteParser(IndexingService indexingService, Site site, String pageUrl) {
+        this.indexingService = indexingService;
         this.site = site;
         this.pageUrl = pageUrl;
     }
@@ -113,7 +113,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         for (String u : doc.select("a").eachAttr("abs:href")) {
             if (sitePattern.matcher(HttpWorker.removeWwwFromUrl(u)).find()
                     && !u.contains("#") && !u.contains("?")) {
-                subtasks.add(new WebsiteParser(dataReceiver, site, HttpWorker.appendSlashToUrlEnd(u)));
+                subtasks.add(new WebsiteParser(indexingService, site, HttpWorker.appendSlashToUrlEnd(u)));
             }
         }
 
@@ -121,7 +121,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     }
 
     protected void sendData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
-        dataReceiver.receiveData(site, page, lemmasAndFrequencies);
+        indexingService.indexParsedData(site, page, lemmasAndFrequencies);
     }
 
     protected void executeDelay() {

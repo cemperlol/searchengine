@@ -4,31 +4,27 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.nodes.Document;
 import searchengine.logging.ApplicationLogger;
+import searchengine.utils.workers.StringWorker;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Lemmatizator {
 
     private static final Set<String> SERVICE_PARTS = Set.of("МЕЖД", "СОЮЗ", "ПРЕДЛ");
-    private static final Pattern PATTERN = Pattern.compile("[а-яё]+");
 
     private static final LuceneMorphology russianLuceneMorph = getRussianMorphology();
 
     public static Map<String, Integer> getLemmas(String text) {
         if (russianLuceneMorph == null) return new HashMap<>();
 
-        text = makeTextValid(text);
-        Matcher matcher = PATTERN.matcher(text);
+        List<String> words = StringWorker.findAllWords(text);
         Map<String, Integer> lemmas = new HashMap<>();
 
-        while (matcher.find()) {
-            String word = text.substring(matcher.start(), matcher.end());
+        for (String word : words) {
             russianLuceneMorph.getNormalForms(word).stream()
                     .filter(f -> !checkIfServicePart(f))
                     .forEach(f -> lemmas.merge(f, 1, Integer::sum));
@@ -39,10 +35,6 @@ public class Lemmatizator {
 
     public static Map<String, Integer> getLemmas(Document doc) {
         return doc == null ? new HashMap<>() : getLemmas(doc.text());
-    }
-
-    public static String makeTextValid(String text) {
-        return text.toLowerCase().replaceAll("[^а-яё\\s]+", " ").replaceAll("ё", "е");
     }
 
     private static boolean checkIfServicePart(String wordForm) {

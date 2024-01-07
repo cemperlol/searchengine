@@ -10,7 +10,6 @@ import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.dto.indexing.IndexingStatusResponse;
-import searchengine.utils.data.DataReceiver;
 import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HttpWorker;
@@ -23,7 +22,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
-public class IndexingServiceImpl implements IndexingService, DataReceiver {
+public class IndexingServiceImpl implements IndexingService {
 
     private final SiteRepository siteRepository;
 
@@ -168,7 +167,7 @@ public class IndexingServiceImpl implements IndexingService, DataReceiver {
     }
 
     @Override
-    public void receiveData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
+    public void indexParsedData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
         if (WebsiteParser.isParsingStopped()) return;
         int siteId = site.getId();
 

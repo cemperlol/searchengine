@@ -8,22 +8,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class SnippetWorker {
 
-    public static String highlightLemmas(AtomicReference<String> textBlock, List<Lemma> lemmas) {
-        lemmas.forEach(lemma -> {
-            String regex = lemma.getLemma();
-            String replacement = "<b>" + lemma.getLemma() + "</b>";
-            textBlock.set(textBlock.get().replaceAll(regex, replacement));
+    public static String highlightLemmas(AtomicReference<String> textBlock, List<String> words) {
+        words.forEach(word -> {
+            String replacement = "<b>" + word + "</b>";
+            textBlock.set(textBlock.get().replaceAll(word, replacement));
         });
 
         return textBlock.get();
     }
 
-    public static String getSnippet(List<Lemma> lemmas, String text) {
+    public static String getSnippet(List<String> words, String text) {
         List<AtomicReference<String>> textBlocks = Arrays.stream(text.split("([.?!]+[\\s]+)"))
                 .map(AtomicReference::new)
                 .toList();
 
-        textBlocks.forEach(block -> block.set(highlightLemmas(block, lemmas)));
+        textBlocks.forEach(block -> block.set(highlightLemmas(block, words)));
         StringBuilder allocatedText = new StringBuilder();
         textBlocks.forEach(block ->
                 allocatedText.append(allocatedText.isEmpty() ? "" : " ").append(block.get()));

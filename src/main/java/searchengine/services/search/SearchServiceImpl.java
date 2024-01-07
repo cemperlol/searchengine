@@ -14,6 +14,7 @@ import searchengine.utils.responsegenerators.SearchResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
 import searchengine.utils.workers.RelevanceWorker;
 import searchengine.utils.workers.SnippetWorker;
+import searchengine.utils.workers.StringWorker;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -76,7 +77,6 @@ public class SearchServiceImpl implements SearchService {
             return SearchResponseGenerator.siteNotIndexed();
         int siteId = site.getId();
         int pageCount = pageRepository.countBySiteId(siteId);
-
         List<Lemma> lemmas = getQueryLemmasAscendingFrequency(query, siteId, pageCount);
         List<Page> pages = getPagesWithAllLemmas(lemmas);
 
@@ -86,9 +86,11 @@ public class SearchServiceImpl implements SearchService {
         pageCount = pages.size();
         pages.forEach(page -> pageAndIndexes.put(page, page.getIndexes()));
         absRelevance = Math.max(absRelevance, RelevanceWorker.getAbsRelevance(pageAndIndexes.values()));
+        List<String> words = new ArrayList<>(lemmas.stream().map(Lemma::getLemma).toList());
+        words.addAll(StringWorker.findAllWords(query));
 
         return SearchResponseGenerator
-                .resultsFound(pageCount, searchResults(lemmas, pageAndIndexes));
+                .resultsFound(pageCount, searchResults(words, pageAndIndexes));
     }
 
     private SearchResponse siteSearch(String query, String siteUrl) {
@@ -149,7 +151,7 @@ public class SearchServiceImpl implements SearchService {
                 .toList();
     }
 
-    private SearchServiceResult[] searchResults(List<Lemma> lemmas,
+    private SearchServiceResult[] searchResults(List<String> words,
                                                 Map<Page, Set<Index>> pageAndIndexes) {
         List<SearchServiceResult> results = pageAndIndexes.keySet().stream()
                 .map(page -> {
@@ -158,7 +160,7 @@ public class SearchServiceImpl implements SearchService {
                     result.setSiteName(page.getSite().getName());
                     result.setUri(page.getPath());
                     result.setTitle(HtmlWorker.getPageTitle(page.getContent()));
-                    result.setSnippet(SnippetWorker.getSnippet(lemmas, HtmlWorker.clearFromHtml(page.getContent())));
+                    result.setSnippet(SnippetWorker.getSnippet(words, HtmlWorker.clearFromHtml(page.getContent())));
                     result.setRelevance((float) pageAndIndexes.get(page).stream().mapToDouble(Index::getRank).sum());
 
                     return result;

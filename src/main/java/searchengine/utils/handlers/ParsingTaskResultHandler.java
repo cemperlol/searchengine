@@ -30,11 +30,11 @@ public class ParsingTaskResultHandler {
         if (results.stream().allMatch(IndexingStatusResponse::isResult))
             return IndexingResponseGenerator.successResponse();
 
-        StringJoiner totalError = new StringJoiner(", " + System.lineSeparator());
+        StringJoiner errorsList = new StringJoiner(", ");
         results.forEach(r -> {
-            if (!r.isResult() && !totalError.toString().contains(r.getError())) totalError.add(r.getError());
+            if (!r.isResult() && !errorsList.toString().contains(r.getError())) errorsList.add(r.getError());
         });
-        return IndexingResponseGenerator.createFailureResponse(totalError.toString());
+        return IndexingResponseGenerator.createFailureResponse(errorsList.toString());
     }
 
     private List<IndexingStatusResponse> getTasksResult() {
