@@ -6,12 +6,12 @@ indexing-settings:
 #      name: Skillbox
 #    - url: https://www.playback.ru
 #      name: PlayBack.Ru
-    - url: https://www.caffeshop.ru/
+    - url: https://www.caffeshop.ru
       name: Сaffeshop
-#    - url: https://ogonek-rest.ru
-#      name: Огонек
-#    - url: https://www.ivksk.ru
-#      name: ИвКСК
+    - url: https://ogonek-rest.ru
+      name: Огонек
+    - url: https://www.ivksk.ru
+      name: ИвКСК
 
 server:
   port: 8080

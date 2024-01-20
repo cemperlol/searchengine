@@ -91,7 +91,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
             lemmasAndFrequencies = Lemmatizator.getLemmas(doc);
         }
 
-        sendData(site, page, lemmasAndFrequencies);
+        sendDataToIndexingService(site, page, lemmasAndFrequencies);
 
         return doc;
     }
@@ -120,7 +120,7 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
         return subtasks;
     }
 
-    protected void sendData(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
+    protected void sendDataToIndexingService(Site site, Page page, Map<String, Integer> lemmasAndFrequencies) {
         indexingService.indexParsedData(site, page, lemmasAndFrequencies);
     }
 

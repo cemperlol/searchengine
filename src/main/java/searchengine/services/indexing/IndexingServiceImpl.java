@@ -34,7 +34,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final SitesList configSites;
 
-    private static final ForkJoinPool pool = new ForkJoinPool();
+    private static ForkJoinPool pool;
 
     private static final Lock lock = new ReentrantLock();
 
@@ -53,6 +53,8 @@ public class IndexingServiceImpl implements IndexingService {
     public IndexingStatusResponse startIndexing() {
         if (!WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.indexingAlreadyStarted();
 
+        PageCache.clearCache();
+        pool = new ForkJoinPool();
         WebsiteParser.setParsingStopped(false);
         CompletableFuture.runAsync(this::prepareForIndexing);
 
@@ -100,6 +102,7 @@ public class IndexingServiceImpl implements IndexingService {
         if (WebsiteParser.isParsingStopped()) return IndexingResponseGenerator.noIndexingRunning();
 
         WebsiteParser.setParsingStopped(true);
+        pool.shutdown();
         PageCache.clearCache();
         siteRepository.findAll().stream()
                 .filter(site -> site.getStatus().equals(SiteStatus.INDEXING))
@@ -112,20 +115,32 @@ public class IndexingServiceImpl implements IndexingService {
     public IndexingStatusResponse indexPage(String url) {
         url = url.trim();
         String baseUrl = HttpWorker.getBaseUrl(url);
-        Site site = siteRepository.findByUrl(baseUrl);
-        if (site == null && configSites.getSites().stream()
-                        .noneMatch(s -> HttpWorker.removeWwwFromUrl(s.getUrl()).equals(baseUrl))) {
-            return IndexingResponseGenerator.siteNotAdded();
-        }
-        if (site == null) {
-            site = saveSite(baseUrl);
-        }
+        Site site = findSiteToIndexPage(baseUrl);
+        if (site == null) return IndexingResponseGenerator.siteNotAdded();
         String pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), HttpWorker.appendSlashToUrlEnd(url));
 
         clearTablesBeforeIndexPage(site, pageUrl);
-        WebsiteParser task = new WebsiteParser(this, site, pageUrl);
+        WebsiteParser.setParsingStopped(false);
+        CompletableFuture.runAsync(() -> {
+            WebsiteParser task = new WebsiteParser(this, site, pageUrl);
+            task.indexPage();
+            WebsiteParser.setParsingStopped(true);
+        });
 
-        return task.indexPage();
+        return IndexingResponseGenerator.successResponse();
+    }
+
+    private Site findSiteToIndexPage(String baseUrl) {
+        Site site = siteRepository.findByUrl(baseUrl);
+        if (site == null) {
+            if (configSites.getSites().stream()
+                    .noneMatch(s -> HttpWorker.removeWwwFromUrl(s.getUrl()).equals(baseUrl))) {
+                return null;
+            }
+            site = saveSite(baseUrl);
+        }
+
+        return site;
     }
 
     private void clearTablesBeforeStartIndexing() {
@@ -142,16 +157,17 @@ public class IndexingServiceImpl implements IndexingService {
         if (page == null) return;
 
         List<Lemma> lemmasToRemove = new ArrayList<>();
-        page.getPageLemmas().forEach(lemma -> {
+        Set<Lemma> pageLemmas = page.getPageLemmas();
+        indexRepository.deleteAllInBatch(page.getIndexes());
+        for (Lemma lemma : pageLemmas) {
             if (lemma.getFrequency() == 1) {
                 lemmasToRemove.add(lemma);
-                lemmaRepository.delete(lemma);
             } else {
                 lemmaRepository.decrementFrequencyById(lemma.getId());
             }
-        });
-        indexRepository.deleteAllInBatch(page.getIndexes());
+        }
         lemmasToRemove.forEach(site.getLemmas()::remove);
+        lemmaRepository.deleteAllInBatch(lemmasToRemove);
         site.getPages().remove(page);
         pageRepository.delete(page);
     }

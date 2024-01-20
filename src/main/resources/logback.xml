@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="FileErrorAppender" class="ch.qos.logback.core.FileAppender">
+        <file>logs/errors.log</file>
+
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%t] %c %logger{36} — %msg%n</pattern>
+        </encoder>
+
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>warn</level>
+        </filter>
+    </appender>
+
+    <root level="warn">
+        <appender-ref ref="FileErrorAppender"/>
+    </root>
+
+</configuration>

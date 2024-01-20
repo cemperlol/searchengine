@@ -25,14 +25,20 @@ public class ParsingTaskResultHandler {
         tasks.forEach(ForkJoinTask::join);
 
         List<IndexingStatusResponse> results = getTasksResult();
-        if (results == null) return IndexingResponseGenerator.failedToGetIndexingTasksResult();
+        if (results == null) {
+            return WebsiteParser.isParsingStopped() ?
+                    IndexingResponseGenerator.userStoppedIndexing() :
+                    IndexingResponseGenerator.failedToGetIndexingTasksResult();
+        }
 
         if (results.stream().allMatch(IndexingStatusResponse::isResult))
             return IndexingResponseGenerator.successResponse();
 
-        StringJoiner errorsList = new StringJoiner(", ");
+        StringJoiner errorsList = new StringJoiner(", " + System.lineSeparator());
         results.forEach(r -> {
-            if (!r.isResult() && !errorsList.toString().contains(r.getError())) errorsList.add(r.getError());
+            if (!r.isResult() && !errorsList.toString().contains(r.getError())) {
+                errorsList.add(r.getError());
+            }
         });
         return IndexingResponseGenerator.createFailureResponse(errorsList.toString());
     }

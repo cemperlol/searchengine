@@ -1,10 +1,11 @@
 package searchengine.logging;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface ApplicationLogger {
-    Logger logger = LogManager.getRootLogger();
+    Logger logger = LoggerFactory.getLogger(ApplicationLogger.class);
 
     static void logError(Exception e) {
         e.printStackTrace();
