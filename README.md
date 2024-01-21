@@ -4,11 +4,7 @@ SearchEngine – проект поискового движка, в которо
 ---
 
 ## Примененные технологии
-- Spring Core
-- Spring Beans
-- Spring Boot
-- Spring Web
-- Spring JPA 
+- Spring Framework
 - Hibernate
 - Thymeleaf
 - Fork/Join Framework
