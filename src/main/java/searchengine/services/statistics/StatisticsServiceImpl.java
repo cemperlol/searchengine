@@ -12,7 +12,7 @@ import searchengine.model.SiteStatus;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
-import searchengine.utils.workers.HttpWorker;
+import searchengine.utils.workers.UrlWorker;
 
 import java.util.List;
 
@@ -44,7 +44,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<DetailedStatisticsItem> detailedStatistics = configSites.getSites().stream()
                 .map(configSite -> {
-                    Site site = siteRepository.findByUrl(HttpWorker.removeWwwFromUrl(configSite.getUrl()));
+                    Site site = siteRepository.findByUrl(UrlWorker.removeWwwFromUrl(configSite.getUrl()));
                     DetailedStatisticsItem item = site == null ? configureItem(configSite) : configureItem(site);
 
                     totalStatistics.setPages(totalStatistics.getPages() + item.getPages());

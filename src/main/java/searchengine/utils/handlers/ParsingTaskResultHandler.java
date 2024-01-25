@@ -34,7 +34,7 @@ public class ParsingTaskResultHandler {
         if (results.stream().allMatch(IndexingStatusResponse::isResult))
             return IndexingResponseGenerator.successResponse();
 
-        StringJoiner errorsList = new StringJoiner(", " + System.lineSeparator());
+        StringJoiner errorsList = new StringJoiner(";\t");
         results.forEach(r -> {
             if (!r.isResult() && !errorsList.toString().contains(r.getError())) {
                 errorsList.add(r.getError());

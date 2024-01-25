@@ -55,7 +55,6 @@ public class HtmlWorker {
 
     public static Document parsePage(Connection.Response response) {
         Document doc = null;
-
         try {
             doc = response.parse();
         } catch (IOException e) {

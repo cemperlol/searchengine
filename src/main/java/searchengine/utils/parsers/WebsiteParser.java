@@ -12,14 +12,13 @@ import searchengine.utils.handlers.ParsingTaskResultHandler;
 import searchengine.utils.lemmas.Lemmatizator;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
 import searchengine.utils.workers.HtmlWorker;
-import searchengine.utils.workers.HttpWorker;
+import searchengine.utils.workers.UrlWorker;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
 
 public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
@@ -59,9 +58,8 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     protected IndexingStatusResponse compute() {
         if (parsingStopped.get()) return IndexingResponseGenerator.userStoppedIndexing();
 
-        pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), pageUrl);
-        if (PageCache.pageIndexed(site.getId(), pageUrl))
-            return IndexingResponseGenerator.successResponse();
+        pageUrl = UrlWorker.removeDomainFromUrl(site.getUrl(), pageUrl);
+        if (PageCache.pageIndexed(site.getId(), pageUrl)) return IndexingResponseGenerator.successResponse();
 
         executeDelay();
 
@@ -80,18 +78,14 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
 
     protected Document savePageInfoAndGetDocument() {
         PageResponse pageResponse = HtmlWorker.getResponse(site.getUrl().concat(pageUrl));
-        if (pageResponse == null) return null;
+        if (pageResponse == null || (pageResponse.getStatusCode() >= 400 && pageUrl.equals("/"))) return null;
         pageResponse.setPath(pageUrl);
 
         Page page = createPage(pageResponse);
-        Document doc = null;
-        Map<String, Integer> lemmasAndFrequencies = null;
-        if (!page.getContent().equals("")) {
-            doc = HtmlWorker.parsePage(pageResponse.getResponse());
-            lemmasAndFrequencies = Lemmatizator.getLemmas(doc);
-        }
+        Document doc = HtmlWorker.parsePage(pageResponse.getResponse());
+        Map<String, Integer> lemmasAndFrequencies = Lemmatizator.getLemmas(doc);
 
-        sendDataToIndexingService(site, page, lemmasAndFrequencies);
+        if (pageResponse.getStatusCode() < 400) sendDataToIndexingService(site, page, lemmasAndFrequencies);
 
         return doc;
     }
@@ -107,13 +101,12 @@ public class WebsiteParser extends RecursiveTask<IndexingStatusResponse> {
     }
 
     protected List<WebsiteParser> createSubtasks(Document doc) {
-        Pattern sitePattern = Pattern.compile(site.getUrl());
+
         List<WebsiteParser> subtasks = new ArrayList<>();
 
         for (String u : doc.select("a").eachAttr("abs:href")) {
-            if (sitePattern.matcher(HttpWorker.removeWwwFromUrl(u)).find()
-                    && !u.contains("#") && !u.contains("?")) {
-                subtasks.add(new WebsiteParser(indexingService, site, HttpWorker.appendSlashToUrlEnd(u)));
+            if (UrlWorker.isUrlValid(site.getUrl(), u)) {
+                subtasks.add(new WebsiteParser(indexingService, site, UrlWorker.appendSlashToUrlEnd(u)));
             }
         }
 

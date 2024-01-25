@@ -138,7 +138,7 @@ public class SearchServiceImpl implements SearchService {
 
     private boolean filterTooFrequentLemmasOnSite(Lemma lemma, int pageCount) {
         if (pageCount < 20) return true;
-        return (float) lemma.getFrequency() / pageCount < 0.1f;
+        return (float) lemma.getFrequency() / pageCount < 0.33f;
     }
 
     private List<Page> getPagesWithAllLemmas(List<Lemma> lemmas) {

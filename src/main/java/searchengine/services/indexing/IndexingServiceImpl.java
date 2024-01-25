@@ -12,7 +12,7 @@ import searchengine.repositories.SiteRepository;
 import searchengine.dto.indexing.IndexingStatusResponse;
 import searchengine.utils.parsers.WebsiteParser;
 import searchengine.utils.responsegenerators.IndexingResponseGenerator;
-import searchengine.utils.workers.HttpWorker;
+import searchengine.utils.workers.UrlWorker;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -69,11 +69,11 @@ public class IndexingServiceImpl implements IndexingService {
                     Site site = new Site();
                     site.setStatus(SiteStatus.INDEXING);
                     site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-                    site.setUrl(HttpWorker.removeWwwFromUrl(s.getUrl()));
+                    site.setUrl(UrlWorker.removeWwwFromUrl(s.getUrl()));
                     site.setName(s.getName());
                     siteRepository.save(site);
 
-                    return new WebsiteParser(this, site, HttpWorker.appendSlashToUrlEnd(site.getUrl()));
+                    return new WebsiteParser(this, site, UrlWorker.appendSlashToUrlEnd(site.getUrl()));
                 }).toList();
 
         tasks.forEach(t -> CompletableFuture.runAsync(() -> processIndexingResult(t)));
@@ -114,10 +114,10 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public IndexingStatusResponse indexPage(String url) {
         url = url.trim();
-        String baseUrl = HttpWorker.getBaseUrl(url);
+        String baseUrl = UrlWorker.getBaseUrl(url);
         Site site = findSiteToIndexPage(baseUrl);
         if (site == null) return IndexingResponseGenerator.siteNotAdded();
-        String pageUrl = HttpWorker.removeDomainFromUrl(site.getUrl(), HttpWorker.appendSlashToUrlEnd(url));
+        String pageUrl = UrlWorker.removeDomainFromUrl(site.getUrl(), UrlWorker.appendSlashToUrlEnd(url));
 
         clearTablesBeforeIndexPage(site, pageUrl);
         WebsiteParser.setParsingStopped(false);
@@ -134,7 +134,7 @@ public class IndexingServiceImpl implements IndexingService {
         Site site = siteRepository.findByUrl(baseUrl);
         if (site == null) {
             if (configSites.getSites().stream()
-                    .noneMatch(s -> HttpWorker.removeWwwFromUrl(s.getUrl()).equals(baseUrl))) {
+                    .noneMatch(s -> UrlWorker.removeWwwFromUrl(s.getUrl()).equals(baseUrl))) {
                 return null;
             }
             site = saveSite(baseUrl);
@@ -176,7 +176,7 @@ public class IndexingServiceImpl implements IndexingService {
         Site site = new Site();
         site.setStatus(SiteStatus.INDEXING);
         site.setStatusTime(new Timestamp(System.currentTimeMillis()));
-        site.setUrl(HttpWorker.removeWwwFromUrl(siteUrl));
+        site.setUrl(UrlWorker.removeWwwFromUrl(siteUrl));
         site.setName(siteUrl);
 
         return siteRepository.save(site);
@@ -197,12 +197,10 @@ public class IndexingServiceImpl implements IndexingService {
             lock.unlock();
         }
 
-        if (lemmasAndFrequencies != null) {
-            lemmasAndFrequencies.forEach((l, f) -> {
-                lemmaRepository.save(siteId, l);
-                indexRepository.save(siteId, page.getPath(), l, f);
-            });
-        }
+        lemmasAndFrequencies.forEach((l, f) -> {
+            lemmaRepository.save(siteId, l);
+            indexRepository.save(siteId, page.getPath(), l, f);
+        });
 
         siteRepository.updateStatusTime(site.getId());
     }
