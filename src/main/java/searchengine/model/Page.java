@@ -18,7 +18,7 @@ public class Page {
     @Column(nullable = false)
     private int id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private Site site;
 
@@ -38,6 +38,6 @@ public class Page {
     )
     private Set<Lemma> pageLemmas = new HashSet<>();
 
-    @OneToMany(mappedBy = "page", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "page")
     private Set<Index> indexes;
 }

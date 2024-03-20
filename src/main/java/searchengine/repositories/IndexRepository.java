@@ -7,6 +7,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Index;
 
+import java.util.List;
+import java.util.Set;
+
 @Repository
 @Transactional
 public interface IndexRepository extends CommonEntityRepository<Index> {
@@ -20,5 +23,10 @@ public interface IndexRepository extends CommonEntityRepository<Index> {
             nativeQuery = true)
     void save(@Param("siteId") int siteId, @Param("pagePath") String pagePath,
               @Param("lemma") String lemma, @Param("rank") float rank);
+
+    @Query("SELECT i FROM Index i " +
+            "WHERE i.page.id = :pageId " +
+            "AND i.lemma.id in :lemmasId")
+    Set<Index> findByPageIdAndLemmasId(@Param("pageId") int pageId, @Param("lemmasId") List<Integer> lemmasId);
 }
 

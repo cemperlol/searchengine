@@ -17,7 +17,7 @@ public class Lemma {
     @Column(nullable = false)
     private int id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private Site site;
 
@@ -27,9 +27,9 @@ public class Lemma {
     @Column(nullable = false)
     private int frequency;
 
-    @ManyToMany(mappedBy = "pageLemmas", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "pageLemmas")
     Set<Page> lemmaPages = new HashSet<>();
 
-    @OneToMany(mappedBy = "lemma", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "lemma")
     private Set<Index> indexes;
 }
