@@ -29,19 +29,19 @@ public class SnippetWorker {
     public static String getSnippet(Set<String> words, String text) {
         List<AtomicReference<String>> textBlocks = TextWorker.getTextSentencesAsAtomicReferences(text);
         textBlocks.forEach(block -> block.set(highlightLemmas(block, words)));
-        StringBuilder allocatedText = new StringBuilder();
+        StringBuilder highlightedText = new StringBuilder();
         textBlocks.forEach(block ->
-                allocatedText.append(allocatedText.isEmpty() ? "" : " ").append(block.get()));
+                highlightedText.append(highlightedText.isEmpty() ? "" : " ").append(block.get()));
 
-        int start = getSnippetStart(allocatedText);
-
+        int start = getSnippetStart(highlightedText);
+        
         return (start == 0 ? "" : "...")
-                .concat(allocatedText.substring(start, Math.min(allocatedText.length(), start + 216)))
+                .concat(highlightedText.substring(start, Math.min(highlightedText.length(), start + 216)))
                 .concat("...");
     }
 
-    private static int getSnippetStart(StringBuilder allocatedText) {
-        int start = allocatedText.toString().indexOf("<b>");
+    private static int getSnippetStart(StringBuilder highlightedText) {
+        int start = highlightedText.toString().indexOf("<b>");
 
         return start < 22 ? 0 : start - 22;
     }

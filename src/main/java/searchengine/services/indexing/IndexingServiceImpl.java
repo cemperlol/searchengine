@@ -202,6 +202,6 @@ public class IndexingServiceImpl implements IndexingService {
             indexRepository.save(siteId, page.getPath(), l, f);
         });
 
-        siteRepository.updateStatusTime(site.getId());
+        siteRepository.updateStatusTime(siteId);
     }
 }
