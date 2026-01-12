@@ -7,14 +7,9 @@ SearchEngine – проект поискового движка, в которо
 - Spring Framework
 - Hibernate
 - Thymeleaf
-- Fork/Join Framework
-- JSoup
 - MySQL
 - Liquibase
-- Lucene Framework
-- Stream API
-- Библиотека Apache Commons
-- Lombok
+- Lucene FrameworkI
 - Maven
  
  ---
