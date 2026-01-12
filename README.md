@@ -9,7 +9,7 @@ SearchEngine – проект поискового движка, в которо
 - Thymeleaf
 - MySQL
 - Liquibase
-- Lucene FrameworkI
+- Lucene Framework
 - Maven
  
  ---
