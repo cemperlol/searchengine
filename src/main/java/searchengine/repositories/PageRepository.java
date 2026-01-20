@@ -9,7 +9,6 @@ import searchengine.model.Page;
 import java.util.List;
 
 @Repository
-@Transactional
 public interface PageRepository extends CommonEntityRepository<Page> {
 
     @Query("select count(p) from Page p where p.site.id = :siteId")

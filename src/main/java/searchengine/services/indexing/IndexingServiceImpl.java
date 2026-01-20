@@ -2,6 +2,7 @@ package searchengine.services.indexing;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.cache.PageCache;
 import searchengine.config.SitesList;
 import searchengine.model.*;
@@ -112,6 +113,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     @Override
+    @Transactional
     public IndexingStatusResponse indexPage(String url) {
         url = url.trim();
         String baseUrl = UrlWorker.getBaseUrl(url);

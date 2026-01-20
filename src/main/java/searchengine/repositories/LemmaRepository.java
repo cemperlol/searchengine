@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Lemma;
 
 @Repository
-@Transactional
 public interface LemmaRepository extends CommonEntityRepository<Lemma> {
 
     @Modifying
